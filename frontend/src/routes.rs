@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use components::Hero;
-use views::{Blog, Home, Navbar};
+use views::{Blog, Home};
 
 
 #[derive(Debug, Clone, Routable, PartialEq)]

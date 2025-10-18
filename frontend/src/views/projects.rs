@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 /// The Project page component that will be rendered when the current route is `[Route::Project]`
 #[component]
-pub fn Project() -> Element {
+pub fn Projects() -> Element {
     rsx! {
         p { "Project Page" }
         p { "Button to add a new Project" }

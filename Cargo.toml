@@ -1,11 +1,19 @@
-[package]
-name = "ferrisbase"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = [
+	"backend",
+	"database",
+	"shared",
+	"frontend",
+]
 
-[dependencies]
-axum = "0.8.6"        # HTTP server
-tokio = "1.0"       # Async runtime
-sqlx = "0.8.6"        # Database toolkit
-serde = "1.0"       # Serialization
-uuid = "1.0"        # ID generation
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

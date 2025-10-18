@@ -1,5 +1,5 @@
 
 
-pub mod layouts;
+pub mod layout;
 
 pub mod projects;

@@ -1,12 +1,11 @@
 use dioxus::prelude::*;
 
-use components::Hero;
-use views::{Blog, Home};
+use crate::views::{Blog, Home};
 
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
-enum Route {
+pub enum Route {
     #[layout(Navbar)]
         #[route("/")]
         Home {},

@@ -2,7 +2,9 @@ use dioxus::prelude::*;
 
 use crate::{components::layout::{UnprotectedLayout, ProjectLayout}, 
     views::{FAQ, Home, PrivacyPolicy, TermsOfService, NotFound}}; 
-use crate::views::projects::{ProjectById, Projects, TableEditor, SQLEditor, CreateNewProject};
+use crate::views::projects::{ProjectById, Projects, TableEditor, SQLEditor, 
+    CreateNewProject, ProjectSettings, APIDocs, Logs, Reports, Authentication, Database};
+
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -14,10 +16,13 @@ pub enum Route {
         FAQ {},
         #[route("/privacy-policy")]
         PrivacyPolicy {},
+        #[route("/terms-of-service")]
+        TermsOfService {},
         #[route("/projects")]
         Projects {},
         #[route("/projects/new")]
         CreateNewProject {},
+
     #[end_layout]
 
 
@@ -28,8 +33,19 @@ pub enum Route {
         TableEditor {id: String},
         #[route("/projects/:id/sql-editor")]
         SQLEditor {id: String},
-        #[route("/terms-of-service")]
-        TermsOfService {},
+        #[route("/projects/:id/settings")]
+        ProjectSettings {id: String},
+        #[route("/projects/:id/api-docs")]
+        APIDocs {id: String},
+        #[route("/projects/:id/logs")]
+        Logs {id: String},
+        #[route("/projects/:id/reports")]
+        Reports {id: String},
+        #[route("/projects/:id/authentication")]
+        Authentication {id: String},
+        #[route("/projects/:id/database")]
+        Database {id: String},
+
     #[end_layout]
 
     #[route("/:..route")]

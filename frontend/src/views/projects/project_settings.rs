@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 /// The Project page component that will be rendered when the current route is `[Route::Project]`
 #[component]
-pub fn ProjectSettings() -> Element {
+pub fn ProjectSettings(id: String) -> Element {
 
     
     rsx! {

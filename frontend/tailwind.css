@@ -1,2 +1,15 @@
 /** @format */
 @import "tailwindcss";
+
+@theme {
+  --font-mainName: "Lora", "sans-serif";
+  --font-display: "Montserrat", "sans-serif";
+
+  --color-MyText: oklch(0.25 0 0); /* Near Black Navy */
+  --color-NavText: oklch(0.98 0 0); /*  */
+  --color-CustomBackground: oklch(0.9521 0 0); /* Light Grey */
+  --color-CustomNav: oklch(0.3192 0.0102 216.79); /* Charcoal */
+  --color-CustomHover: oklch(0.5396 0.1558 146.15); /* Green */
+  --color-CustomHoverDarker: oklch(0.454 0.1558 146.15); /*  */
+  --color-CustomAccent: oklch(0.6557 0.2304 25.48); /*  */
+}

@@ -11,7 +11,7 @@ pub fn ProjectLayout() -> Element {
             Navbar {}
             main { class: "flex-1 bg-CustomBackground font-display text-MyText",
                 // Layout container: sidebar + content
-                div { class: "mx-auto px-4 sm:px-8 py-8 max-w-7xl",
+                div { class: " px-4 sm:px-8 py-8 ",
                     div { class: "flex gap-6",
                         ProjectLeftSidebar {}
                         div { class: "flex-1 bg-transparent", Outlet::<Route> {} }

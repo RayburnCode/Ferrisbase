@@ -40,19 +40,34 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "🧩" }
-                        span { class: "text-sm font-medium", "SQL Editor" }
+                        Link {
+                            to: Route::SQLEditor {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "SQL Editor" }
+                        }
                     }
                 }
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "🗄️" }
-                        span { class: "text-sm font-medium", "Database" }
+                        Link {
+                            to: Route::Database {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Database" }
+                        }
                     }
                 }
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "🔐" }
-                        span { class: "text-sm font-medium", "Authentication" }
+                        Link {
+                            to: Route::Authentication {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Authentication" }
+                        }
                     }
                 }
 
@@ -61,19 +76,34 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📊" }
-                        span { class: "text-sm font-medium", "Reports" }
+                        Link {
+                            to: Route::Reports {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Reports" }
+                        }
                     }
                 }
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📝" }
-                        span { class: "text-sm font-medium", "Logs" }
+                        Link {
+                            to: Route::Logs {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Logs" }
+                        }
                     }
                 }
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📚" }
-                        span { class: "text-sm font-medium", "API Docs" }
+                        Link {
+                            to: Route::APIDocs {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "API Docs" }
+                        }
                     }
                 }
 
@@ -82,7 +112,12 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "⚙️" }
-                        span { class: "text-sm font-medium", "Settings" }
+                        Link {
+                            to: Route::ProjectSettings {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Settings" }
+                        }
                     }
                 }
             }

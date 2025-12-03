@@ -82,6 +82,12 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
+    --font-display: "Montserrat", "sans-serif";
+    --color-MyText: oklch(0.25 0 0);
+    --color-CustomBackground: oklch(0.9521 0 0);
+    --color-CustomNav: oklch(0.3192 0.0102 216.79);
+    --color-CustomHover: oklch(0.5396 0.1558 146.15);
+    --color-CustomAccent: oklch(0.6557 0.2304 25.48);
   }
 }
 @layer base {
@@ -532,6 +538,9 @@
     border-left-style: var(--tw-border-style);
     border-left-width: 4px;
   }
+  .border-CustomHover {
+    border-color: var(--color-CustomHover);
+  }
   .border-blue-500 {
     border-color: var(--color-blue-500);
   }
@@ -555,6 +564,15 @@
   }
   .border-purple-500 {
     border-color: var(--color-purple-500);
+  }
+  .bg-CustomBackground {
+    background-color: var(--color-CustomBackground);
+  }
+  .bg-CustomHover {
+    background-color: var(--color-CustomHover);
+  }
+  .bg-CustomNav {
+    background-color: var(--color-CustomNav);
   }
   .bg-blue-100 {
     background-color: var(--color-blue-100);
@@ -674,6 +692,9 @@
   .text-center {
     text-align: center;
   }
+  .font-display {
+    font-family: var(--font-display);
+  }
   .text-2xl {
     font-size: var(--text-2xl);
     line-height: var(--tw-leading, var(--text-2xl--line-height));
@@ -743,6 +764,15 @@
   }
   .text-pretty {
     text-wrap: pretty;
+  }
+  .text-CustomAccent {
+    color: var(--color-CustomAccent);
+  }
+  .text-CustomBackground {
+    color: var(--color-CustomBackground);
+  }
+  .text-MyText {
+    color: var(--color-MyText);
   }
   .text-black {
     color: var(--color-black);
@@ -918,6 +948,13 @@
       }
     }
   }
+  .hover\:text-CustomHover {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-CustomHover);
+      }
+    }
+  }
   .hover\:text-blue-400 {
     &:hover {
       @media (hover: hover) {
@@ -950,6 +987,11 @@
     &:focus {
       --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
       box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus\:ring-CustomHover {
+    &:focus {
+      --tw-ring-color: var(--color-CustomHover);
     }
   }
   .focus\:ring-blue-500 {

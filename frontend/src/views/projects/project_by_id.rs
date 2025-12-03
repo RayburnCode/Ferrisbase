@@ -13,9 +13,6 @@ pub fn ProjectById(id: String) -> Element {
                         h1 { class: "text-4xl font-bold text-gray-900 mb-2", "Project: {id}" }
                         p { class: "text-gray-600", "Monitor and manage your project statistics" }
                     }
-                    button { class: "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
-                        "Project Settings"
-                    }
                 }
             }
             // Statistics Grid

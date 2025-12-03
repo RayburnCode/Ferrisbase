@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 /// The Project page component that will be rendered when the current route is `[Route::Project]`
 #[component]
-pub fn SQLEditor() -> Element {
+pub fn SQLEditor(id: String) -> Element {
 
     
     rsx! {

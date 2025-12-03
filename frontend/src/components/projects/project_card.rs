@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::routes::Route;
 
 
 #[component]
@@ -6,6 +7,8 @@ pub fn ProjectCard(
     project_name: String,
     database_status: String,
     created_at: String,
+    slug: String,
+    id: uuid::Uuid
 ) -> Element {
     rsx! {
         div { class: "bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6 border border-gray-200",
@@ -33,7 +36,11 @@ pub fn ProjectCard(
             }
             // Action Buttons
             div { class: "flex gap-3 pt-4 border-t border-gray-200",
-                button { class: "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
+                Link {
+                    to: Route::ProjectById {
+                        id: slug.clone(),
+                    },
+                    class: "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-center",
                     "Open Project"
                 }
                 button { class: "bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2",

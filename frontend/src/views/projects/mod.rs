@@ -9,3 +9,6 @@ pub use sql_editor::SQLEditor;
 
 pub mod table_editor;
 pub use table_editor::TableEditor;
+
+pub mod new_project;
+pub use new_project::CreateNewProject;

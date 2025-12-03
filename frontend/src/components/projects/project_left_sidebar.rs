@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::routes::Route;
 
 
 #[component]
@@ -17,13 +18,23 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "🏷️" }
-                        span { class: "text-sm font-medium", "Overview" }
+                        Link {
+                            to: Route::ProjectById {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Overview" }
+                        }
                     }
                 }
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "🧾" }
-                        span { class: "text-sm font-medium", "Table Editor" }
+                        Link {
+                            to: Route::TableEditor {
+                                id: "default".to_string(),
+                            },
+                            span { class: "text-sm font-medium", "Table Editor" }
+                        }
                     }
                 }
                 li {
@@ -77,4 +88,5 @@ pub fn ProjectLeftSidebar() -> Element {
             }
         }
     }
-}
+        }
+

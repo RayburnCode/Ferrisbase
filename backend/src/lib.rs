@@ -1,11 +1,8 @@
-// backend/src/lib.rs
-// pub mod config;
-// mod middleware;
-// pub mod routes;
-// mod handlers;
-// mod services;
-// mod conversions;
-// mod error;
+pub mod config;
+pub mod error;
+pub mod handlers;
+pub mod middleware;
+pub mod routes;
+pub mod services;
 
-// pub use config::server::run_server;
-// pub use config::AppState;
+pub use config::{AppState, Config};

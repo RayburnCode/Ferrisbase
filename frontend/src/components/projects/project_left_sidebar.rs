@@ -5,7 +5,7 @@ use crate::routes::Route;
 #[component]
 pub fn ProjectLeftSidebar() -> Element {
     rsx! {
-        nav { class: "w-64 bg-white border-r border-gray-200 min-h-screen p-4 hidden md:block",
+        nav { class: "w-48 bg-white border-r border-gray-200 min-h-screen p-4 hidden md:block",
 
             // Sidebar header
             div { class: "mb-6",

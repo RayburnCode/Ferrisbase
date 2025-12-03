@@ -1,6 +1,5 @@
 use crate::Route;
 use dioxus::prelude::*;
-use dioxus_router::prelude::use_route;
 
 
 #[component]
@@ -43,35 +42,6 @@ pub fn Navbar(children: Element) -> Element {
                                 "text-white hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
                             ),
                             "Home"
-                        }
-
-                        Link {
-                            to: Route::LoanOptions {},
-                            class: active_class(
-                                &Route::LoanOptions {},
-                                &current_route,
-                                "text-white hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
-                            ),
-                            "Loan Options"
-                        }
-                        Link {
-                            to: Route::Team {},
-                            class: active_class(
-                                &Route::Team {},
-                                &current_route,
-                                "text-white hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
-                            ),
-                            "Our Team"
-                        }
-
-                        Link {
-                            to: Route::Resources {},
-                            class: active_class(
-                                &Route::Resources {},
-                                &current_route,
-                                "text-white hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
-                            ),
-                            "Resources"
                         }
                     }
 
@@ -116,8 +86,8 @@ pub fn Navbar(children: Element) -> Element {
 
                         // Contact Us button
                         Link {
-                            to: Route::LeadFormPage {},
-                            class: if matches!(current_route, Route::LeadFormPage {}) { "rounded-md bg-CustomHover px-4 py-2 text-sm font-medium hover:bg-green-800 text-CustomBackground shadow  focus:outline-none transition-colors" } else { "rounded-md bg-CustomHover px-4 py-2 text-sm font-medium text-CustomBackground shadow hover:bg-green-800 focus:outline-none transition-colors" },
+                            to: Route::Home {},
+                            class: if matches!(current_route, Route::Home {}) { "rounded-md bg-CustomHover px-4 py-2 text-sm font-medium hover:bg-green-800 text-CustomBackground shadow  focus:outline-none transition-colors" } else { "rounded-md bg-CustomHover px-4 py-2 text-sm font-medium text-CustomBackground shadow hover:bg-green-800 focus:outline-none transition-colors" },
                             "Contact Us"
                         }
                     }
@@ -137,36 +107,7 @@ pub fn Navbar(children: Element) -> Element {
                                 onclick: move |_| is_mobile_menu_open.set(false),
                                 "Home"
                             }
-                            Link {
-                                to: Route::Team {},
-                                class: mobile_active_class(
-                                    &Route::Team {},
-                                    &current_route,
-                                    "block px-3 py-2 text-base font-medium text-white hover:text-CustomHover hover:bg-gray-50 transition-colors",
-                                ),
-                                onclick: move |_| is_mobile_menu_open.set(false),
-                                "Our Team"
-                            }
-                            Link {
-                                to: Route::Resources {},
-                                class: mobile_active_class(
-                                    &Route::Resources {},
-                                    &current_route,
-                                    "block px-3 py-2 text-base font-medium text-white hover:text-CustomHover hover:bg-gray-50 transition-colors",
-                                ),
-                                onclick: move |_| is_mobile_menu_open.set(false),
-                                "Resources"
-                            }
-                            Link {
-                                to: Route::LoanOptions {},
-                                class: mobile_active_class(
-                                    &Route::LoanOptions {},
-                                    &current_route,
-                                    "block px-3 py-2 text-base font-medium text-white hover:text-CustomHover hover:bg-gray-50 transition-colors",
-                                ),
-                                onclick: move |_| is_mobile_menu_open.set(false),
-                                "Loan Options"
-                            }
+                        
                         }
                     }
                 }

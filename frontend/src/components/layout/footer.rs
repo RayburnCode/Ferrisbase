@@ -34,7 +34,7 @@ pub fn Footer() -> Element {
 
                             Link {
                                 class: "block text-sm text-gray-400 hover:text-blue-400 transition-colors",
-                                to: Route::Terms {},
+                                to: Route::TermsOfService {},
                                 "Terms of Service"
                             }
                         }
@@ -81,7 +81,6 @@ pub fn Footer() -> Element {
                 div { class: "mx-6 text-sm text-gray-400 mb-4 md:mb-0",
                     "© 2025 Ferrisbase. All rights reserved."
                 }
-            
             }
         }
     }

@@ -5,6 +5,11 @@ edition = "2024"
 
 [dependencies]
 
+# axum-server = "0.7.3"
+# tower-http = "0.6.7"
+# tokio = "1.48.0"
+# axum = "0.8.7"
+# dotenvy = "0.15.7"
 
 # Local dependencies
 database = { path = "../database" } # <-- Backend depends on database

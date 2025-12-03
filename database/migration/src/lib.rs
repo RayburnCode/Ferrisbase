@@ -12,4 +12,4 @@ impl MigratorTrait for Migrator {
             Box::new(m001_create_contact_form::Migration),
         ]
     }
-} 
+}  

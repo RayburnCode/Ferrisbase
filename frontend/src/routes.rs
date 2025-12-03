@@ -1,14 +1,21 @@
 use dioxus::prelude::*;
 
-use crate::views::{Blog, Home};
+use crate::{components::layout::UnprotectedLayout, 
+    views::{FAQ, Home, PrivacyPolicy, Projects, TermsOfService}};
 
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 pub enum Route {
-    #[layout(Navbar)]
+    #[layout(UnprotectedLayout)]
         #[route("/")]
         Home {},
-        #[route("/blog/:id")]
-        Blog { id: i32 },
+        #[route("/faq")]
+        FAQ {},
+        #[route("/privacy-policy")]
+        PrivacyPolicy {},
+        #[route("/projects")]
+        Projects {},
+        #[route("/terms-of-service")]
+        TermsOfService {},
 }

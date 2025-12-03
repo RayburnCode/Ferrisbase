@@ -43,6 +43,15 @@ pub fn Navbar(children: Element) -> Element {
                             ),
                             "Home"
                         }
+                        Link {
+                            to: Route::Projects {},
+                            class: active_class(
+                                &Route::Projects {},
+                                &current_route,
+                                "text-black hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
+                            ),
+                            "Projects"
+                        }
                     }
 
                     // Mobile menu button and Contact Us button container

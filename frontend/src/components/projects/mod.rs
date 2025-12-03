@@ -6,3 +6,6 @@ pub use project_card::ProjectCard;
 
 pub mod project_left_sidebar;
 pub use project_left_sidebar::ProjectLeftSidebar;
+
+pub mod statistic_card;
+pub use statistic_card::StatisticCard;

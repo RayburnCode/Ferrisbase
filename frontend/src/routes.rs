@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-use crate::{components::layout::UnprotectedLayout, 
-    views::{FAQ, Home, PrivacyPolicy, TermsOfService}};
+use crate::{components::layout::{UnprotectedLayout, ProjectLayout}, 
+    views::{FAQ, Home, PrivacyPolicy, TermsOfService, NotFound}}; 
 use crate::views::projects::{ProjectById, Projects};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -16,6 +16,16 @@ pub enum Route {
         PrivacyPolicy {},
         #[route("/projects")]
         Projects {},
+    #[end_layout]
+
+
+    #[layout(ProjectLayout)]
+        #[route("/projects/:id")]
+        ProjectById {id: String},
         #[route("/terms-of-service")]
         TermsOfService {},
+    #[end_layout]
+
+    #[route("/:..route")]
+    NotFound { route: Vec<String> },
 }

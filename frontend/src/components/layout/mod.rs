@@ -7,5 +7,5 @@ pub use navbar::Navbar;
 pub mod unprotected_layout;
 pub use unprotected_layout::UnprotectedLayout;
 
-pub mod protected_layout;
-pub use protected_layout::ProtectedLayout;
+pub mod project_layout;
+pub use project_layout::ProjectLayout; 

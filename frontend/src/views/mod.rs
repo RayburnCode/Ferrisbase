@@ -1,4 +1,5 @@
 pub mod projects;
+use dioxus::html::mo;
 pub use projects::{Projects, ProjectById};
 
 
@@ -8,6 +9,9 @@ mod home;
 pub use home::Home;
 
 
+
+pub mod not_found;
+pub use not_found::NotFound;
 
 pub mod faq;
 pub use faq::FAQ;

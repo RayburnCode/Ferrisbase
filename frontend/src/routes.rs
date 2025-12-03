@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
 use crate::{components::layout::UnprotectedLayout, 
-    views::{FAQ, Home, PrivacyPolicy, Projects, TermsOfService}};
-
+    views::{FAQ, Home, PrivacyPolicy, TermsOfService}};
+use crate::views::projects::{ProjectById, Projects};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]

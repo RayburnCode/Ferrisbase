@@ -1,10 +1,13 @@
+pub mod projects;
+pub use projects::{Projects, ProjectById};
 
+
+pub mod auth;
 
 mod home;
 pub use home::Home;
 
-mod projects;
-pub use projects::Projects;
+
 
 pub mod faq;
 pub use faq::FAQ;

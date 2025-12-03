@@ -10,7 +10,7 @@ pub fn Navbar(children: Element) -> Element {
     // Helper function to determine active class
     fn active_class(route: &Route, current_route: &Route, class: &str) -> String {
         if route == current_route {
-            format!("{} text-white font-medium border-b-2 border-CustomHover", class)
+            format!("{} text-blue-600 font-medium border-b-2 border-CustomHover", class)
         } else {
             class.to_string()
         }
@@ -19,7 +19,7 @@ pub fn Navbar(children: Element) -> Element {
     // Helper function for mobile active class
     fn mobile_active_class(route: &Route, current_route: &Route, class: &str) -> String {
         if route == current_route {
-            format!("{} text-white font-medium border-l-4 border-CustomHover bg-CustomHover bg-opacity-10", class)
+            format!("{} text-blue-600 font-medium border-l-4 border-CustomHover bg-CustomHover bg-opacity-10", class)
         } else {
             class.to_string()
         }
@@ -39,7 +39,7 @@ pub fn Navbar(children: Element) -> Element {
                             class: active_class(
                                 &Route::Home {},
                                 &current_route,
-                                "text-white hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
+                                "text-black hover:text-CustomAccentDarker px-1 py-2 text-sm font-medium transition-colors",
                             ),
                             "Home"
                         }
@@ -59,7 +59,7 @@ pub fn Navbar(children: Element) -> Element {
                                     class: "h-6 w-6",
                                     fill: "none",
                                     "viewBox": "0 0 24 24",
-                                    stroke: "white",
+                                    stroke: "black",
                                     path {
                                         "stroke-linecap": "round",
                                         "stroke-linejoin": "round",
@@ -73,7 +73,7 @@ pub fn Navbar(children: Element) -> Element {
                                     class: "h-6 w-6",
                                     fill: "none",
                                     "viewBox": "0 0 24 24",
-                                    stroke: "white",
+                                    stroke: "black",
                                     path {
                                         "stroke-linecap": "round",
                                         "stroke-linejoin": "round",
@@ -102,12 +102,11 @@ pub fn Navbar(children: Element) -> Element {
                                 class: mobile_active_class(
                                     &Route::Home {},
                                     &current_route,
-                                    "block px-3 py-2 text-base font-medium text-white hover:text-CustomHover hover:bg-gray-50 transition-colors",
+                                    "block px-3 py-2 text-base font-medium text-black hover:text-CustomHover hover:bg-gray-50 transition-colors",
                                 ),
                                 onclick: move |_| is_mobile_menu_open.set(false),
                                 "Home"
                             }
-                        
                         }
                     }
                 }

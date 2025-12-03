@@ -51,9 +51,9 @@ pub fn Footer() -> Element {
                             }
                             a {
                                 class: "flex items-center text-sm text-gray-400 hover:text-blue-400 transition-colors",
-                                href: "tel:+1-858-252-3052",
+                                href: "tel:+1-858-000-0000",
                                 span { class: "mr-2", "📞" }
-                                "(858) 252-3052"
+                                "(858) 000-0000"
                             }
                             div { class: "flex space-x-4 mt-4",
                                 a {

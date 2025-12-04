@@ -21,7 +21,7 @@ pub fn use_create_project() -> impl Fn(String, Option<String>) -> std::pin::Pin<
             };
 
             match client
-                .post("endpoints::projects()")
+                .post(&endpoints::projects())
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&create_req)
@@ -65,7 +65,7 @@ pub fn use_fetch_projects() -> impl Fn() -> std::pin::Pin<Box<dyn std::future::F
             let client = Client::new();
 
             match client
-                .get("endpoints::projects()")
+                .get(&endpoints::projects())
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", token))
                 .send()

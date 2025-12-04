@@ -40,6 +40,9 @@ chrono = { version = "0.4", features = ["serde"] }
 # UUID
 uuid = { version = "1.11.0", features = ["v4", "serde"] }
 
+# Slug generation
+slug = "0.1"
+
 # Local dependencies
 database = { path = "../database" }
 shared = { path = "../shared" }

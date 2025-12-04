@@ -1,8 +1,7 @@
-use axum::{extract::State, Json};
+use axum::{extract::{State, Request}, Json};
 
 use crate::config::AppState;
 use crate::error::AppResult;
-use crate::middleware::AuthUser;
 use crate::services;
 use shared::models::{AuthResponse, LoginRequest, RegisterRequest, UserResponse};
 
@@ -38,11 +37,15 @@ pub async fn login(
     Ok(Json(response))
 }
 
-/// GET /auth/me - Get current user info
+/// GET /auth/me - Get current user info (requires auth middleware)
 pub async fn get_current_user(
     State(state): State<AppState>,
-    AuthUser(claims): AuthUser,
+    req: Request,
 ) -> AppResult<Json<UserResponse>> {
+    // Get claims from request extensions (set by require_auth middleware)
+    let claims = crate::middleware::get_claims(&req)
+        .ok_or_else(|| crate::error::AppError::Unauthorized("No authentication found".to_string()))?;
+    
     let user = services::get_user_by_id(&state.db, &claims.sub).await?;
     Ok(Json(user))
 }

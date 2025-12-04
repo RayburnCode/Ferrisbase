@@ -2,7 +2,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
-use uuid::Uuid;
+use uuid::Uuid; 
 
 use crate::error::{AppError, AppResult};
 use database::entities::prelude::*;
@@ -91,9 +91,9 @@ pub async fn register_user(
         email: Set(req.email.clone()),
         password_hash: Set(password_hash),
         name: Set(req.name.clone()),
-        role: Set("user".to_string()),
-        email_verified: Set(false),
-        is_active: Set(true),
+        role: Set(Some("user".to_string())),
+        email_verified: Set(Some(false)),
+        is_active: Set(Some(true)),
         ..Default::default()
     };
 
@@ -103,7 +103,7 @@ pub async fn register_user(
     let token = generate_token(
         &user.id.to_string(),
         &user.email,
-        &user.role,
+        &user.role.clone().unwrap_or_else(|| "user".to_string()),
         jwt_secret,
         expiration_hours,
     )?;
@@ -114,8 +114,8 @@ pub async fn register_user(
             id: user.id.to_string(),
             email: user.email,
             name: user.name,
-            role: user.role,
-            email_verified: user.email_verified,
+            role: user.role.unwrap_or_else(|| "user".to_string()),
+            email_verified: user.email_verified.unwrap_or(false),
             created_at: user.created_at.map(|t| t.to_string()).unwrap_or_default(),
         },
     })
@@ -136,7 +136,7 @@ pub async fn login_user(
         .ok_or_else(|| AppError::Unauthorized("Invalid email or password".to_string()))?;
 
     // Check if user is active
-    if !user.is_active {
+    if !user.is_active.unwrap_or(true) {
         return Err(AppError::Unauthorized("Account is disabled".to_string()));
     }
 
@@ -150,7 +150,7 @@ pub async fn login_user(
     let token = generate_token(
         &user.id.to_string(),
         &user.email,
-        &user.role,
+        &user.role.clone().unwrap_or_else(|| "user".to_string()),
         jwt_secret,
         expiration_hours,
     )?;
@@ -161,8 +161,8 @@ pub async fn login_user(
             id: user.id.to_string(),
             email: user.email,
             name: user.name,
-            role: user.role,
-            email_verified: user.email_verified,
+            role: user.role.unwrap_or_else(|| "user".to_string()),
+            email_verified: user.email_verified.unwrap_or(false),
             created_at: user.created_at.map(|t| t.to_string()).unwrap_or_default(),
         },
     })
@@ -182,8 +182,8 @@ pub async fn get_user_by_id(db: &DatabaseConnection, user_id: &str) -> AppResult
         id: user.id.to_string(),
         email: user.email,
         name: user.name,
-        role: user.role,
-        email_verified: user.email_verified,
+        role: user.role.unwrap_or_else(|| "user".to_string()),
+        email_verified: user.email_verified.unwrap_or(false),
         created_at: user.created_at.map(|t| t.to_string()).unwrap_or_default(),
     })
 }

@@ -4,7 +4,7 @@ use crate::{components::layout::{UnprotectedLayout, ProjectLayout},
     views::{FAQ, Home, PrivacyPolicy, TermsOfService, NotFound}}; 
 use crate::views::projects::{ProjectById, Projects, TableEditor, SQLEditor, 
     CreateNewProject, ProjectSettings, APIDocs, Logs, Reports, Authentication, Database};
-
+use crate::views::components::auth::{LoginForm, ResetPasswordForm};
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -12,6 +12,11 @@ pub enum Route {
     #[layout(UnprotectedLayout)]
         #[route("/")]
         Home {},
+        #[route("/login")]
+        LoginForm {},
+        #[route("/reset-password")]
+        ResetPasswordForm {},
+
         #[route("/faq")]
         FAQ {},
         #[route("/privacy-policy")]

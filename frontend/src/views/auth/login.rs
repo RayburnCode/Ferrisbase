@@ -3,6 +3,7 @@ use crate::{Route, AuthState, User};
 use crate::components::ErrorNotification;
 use shared::models::{AuthResponse, LoginRequest};
 use reqwest::Client;
+use crate::config::endpoints;
  
 const LOGO: Asset = asset!("/assets/favicon.ico");
 
@@ -58,7 +59,7 @@ pub fn LoginForm() -> Element {
             };
 
             match client
-                .post("http://127.0.0.1:8081/api/auth/login")
+                .post(&endpoints::login())
                 .header("Content-Type", "application/json")
                 .json(&login_req)
                 .send()

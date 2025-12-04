@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use shared::models::{CreateProjectRequest, ProjectResponse};
 use reqwest::Client;
+use crate::config::endpoints;
 
 /// Hook to create a new project
 #[allow(dead_code)]
@@ -20,7 +21,7 @@ pub fn use_create_project() -> impl Fn(String, Option<String>) -> std::pin::Pin<
             };
 
             match client
-                .post("http://127.0.0.1:8081/api/projects")
+                .post("endpoints::projects()")
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", token))
                 .json(&create_req)
@@ -64,7 +65,7 @@ pub fn use_fetch_projects() -> impl Fn() -> std::pin::Pin<Box<dyn std::future::F
             let client = Client::new();
 
             match client
-                .get("http://127.0.0.1:8081/api/projects")
+                .get("endpoints::projects()")
                 .header("Content-Type", "application/json")
                 .header("Authorization", format!("Bearer {}", token))
                 .send()
@@ -81,6 +82,47 @@ pub fn use_fetch_projects() -> impl Fn() -> std::pin::Pin<Box<dyn std::future::F
                         let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
                         Err(match status_code {
                             401 => "Unauthorized. Please log in again.".to_string(),
+                            _ => error_text,
+                        })
+                    }
+                }
+                Err(e) => Err(format!("Network error: {}", e)),
+            }
+        })
+    }
+}
+
+/// Hook to fetch a single project by slug
+pub fn use_fetch_project() -> impl Fn(String) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<ProjectResponse, String>>>> {
+    let auth_state = use_context::<Signal<crate::AuthState>>();
+    
+    move |slug: String| {
+        let token = auth_state.read().token.clone();
+        
+        Box::pin(async move {
+            let token = token.ok_or_else(|| "Not authenticated".to_string())?;
+            
+            let client = Client::new();
+
+            match client
+                .get(&endpoints::project_by_slug(&slug))
+                .header("Content-Type", "application/json")
+                .header("Authorization", format!("Bearer {}", token))
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        match response.json::<ProjectResponse>().await {
+                            Ok(project) => Ok(project),
+                            Err(e) => Err(format!("Failed to parse response: {}", e)),
+                        }
+                    } else {
+                        let status_code = response.status().as_u16();
+                        let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                        Err(match status_code {
+                            401 => "Unauthorized. Please log in again.".to_string(),
+                            404 => "Project not found".to_string(),
                             _ => error_text,
                         })
                     }

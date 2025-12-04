@@ -4,6 +4,7 @@ use reqwest::Client;
 use serde_json::json;
 use std::future::Future;
 use std::pin::Pin;
+use crate::config::endpoints;
 
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
@@ -73,7 +74,7 @@ pub fn AuthProvider(children: Element) -> Element {
             if let Some(token) = stored_token {
                 log::debug!("🔍 Checking authentication status using stored token");
                 
-                match make_authenticated_request(&token, "http://127.0.0.1:8081/api/auth/me").await {
+                match make_authenticated_request(&token, &endpoints::me()).await {
                     Ok(response) => {
                         let status_code = response.status();
                         log::debug!("📡 Auth check response status: {}", status_code);
@@ -137,10 +138,10 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
             let payload = json!({ "email": email, "password": password });
             let body_string = serde_json::to_string(&payload).unwrap();
             
-            log::debug!("🌐 Making POST request to: http://127.0.0.1:8081/api/auth/login");
+            log::debug!("🌐 Making POST request to: {}", endpoints::login());
             
             let response = client
-                .post("http://127.0.0.1:8081/api/auth/login")
+                .post("endpoints::login()")
                 .header("Content-Type", "application/json")
                 .body(body_string)
                 .send()
@@ -173,7 +174,7 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
                                 // Test with Authorization header instead of cookies
                                 log::info!("🧪 Testing Authorization header authentication");
                                 let test_client = Client::new();
-                                match test_client.get("http://127.0.0.1:8081/api/auth/me")
+                                match test_client.get(&endpoints::me())
                                     .header("Content-Type", "application/json")
                                     .header("Authorization", format!("Bearer {}", auth_response.token))
                                     .send().await {
@@ -272,10 +273,10 @@ pub fn use_register_user() -> impl Fn(String, String, Option<String>) -> Pin<Box
             let payload = json!({ "email": email, "password": password, "name": name });
             let body_string = serde_json::to_string(&payload).unwrap();
             
-            log::debug!("🌐 Making POST request to: http://127.0.0.1:8081/api/auth/register");
+            log::debug!("🌐 Making POST request to: {}", endpoints::register());
             
             let response = client
-                .post("http://127.0.0.1:8081/api/auth/register")
+                .post("endpoints::register()")
                 .header("Content-Type", "application/json")
                 .body(body_string)
                 .send()
@@ -378,7 +379,7 @@ pub fn use_logout() -> impl Fn() -> Pin<Box<dyn Future<Output = Result<(), Strin
             let client = Client::new();
             
             let mut request_builder = client
-                .post("http://127.0.0.1:8081/api/auth/logout")
+                .post("endpoints::logout()")
                 .header("Content-Type", "application/json");
             
             // Add Authorization header if token exists

@@ -5,6 +5,7 @@ mod auth;
 mod components;
 mod views;
 mod hooks;
+mod config;
 pub mod routes;
 pub use routes::Route;
 pub use auth::{AuthState, User};

@@ -3,6 +3,7 @@ use crate::{Route, AuthState, User};
 use crate::components::ErrorNotification;
 use shared::models::{AuthResponse, RegisterRequest};
 use reqwest::Client;
+use crate::config::endpoints;
  
 const LOGO: Asset = asset!("/assets/favicon.ico");
 
@@ -75,7 +76,7 @@ pub fn RegisterForm() -> Element {
             };
 
             match client
-                .post("http://127.0.0.1:8081/api/auth/register")
+                .post(&endpoints::register())
                 .header("Content-Type", "application/json")
                 .json(&register_req)
                 .send()

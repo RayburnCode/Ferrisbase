@@ -8,7 +8,7 @@ Complete authentication system for Ferrisbase with JWT tokens, password hashing,
 
 ## 📁 Project Structure
 
-```
+```sh
 backend/
 ├── src/
 │   ├── main.rs              # Server entry point
@@ -357,7 +357,7 @@ cargo install sea-orm-cli
 
 Add to `.env`:
 
-```
+```sh
 JWT_SECRET=your-super-secret-key
 ```
 

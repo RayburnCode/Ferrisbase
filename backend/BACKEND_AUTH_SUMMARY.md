@@ -75,7 +75,7 @@ curl -X POST http://localhost:8080/auth/register \
 
 ## Architecture
 
-```
+```sh
 ┌─────────────┐
 │   Frontend  │
 │   (Dioxus)  │

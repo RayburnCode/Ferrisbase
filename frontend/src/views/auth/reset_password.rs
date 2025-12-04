@@ -54,7 +54,7 @@ pub fn ResetPasswordForm() -> Element {
                                 src: LOGO,
                                 alt: "logo",
                             }
-                            "Mortgage Portal"
+                            "Ferrisbase"
                         }
                     }
                     div { class: "space-y-6 px-4",

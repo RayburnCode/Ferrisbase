@@ -1,43 +1,19 @@
 use dioxus::prelude::*;
-use shared::{models::User, ApiResponse};
+use shared::models::{AuthResponse, UserResponse};
 use reqwest::Client;
 use serde_json::json;
 use std::future::Future;
 use std::pin::Pin;
 
-#[derive(serde::Deserialize)]
-struct LoginResponse {
-    user: User,
-    token: String,
-}
-
-#[derive(Clone, Copy)] 
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
 pub struct AuthContext { 
     pub is_authenticated: Signal<bool>,
-    pub user: Signal<Option<User>>,
-    pub token: Signal<Option<String>>, // Add token field
+    pub user: Signal<Option<UserResponse>>,
+    pub token: Signal<Option<String>>,
     pub send_magic_link: Signal<Option<fn(String) -> Pin<Box<dyn Future<Output = Result<(), String>>>>>>,
-    pub verify_magic_link: Signal<Option<fn(String) -> Pin<Box<dyn Future<Output = Result<User, String>>>>>>,
+    pub verify_magic_link: Signal<Option<fn(String) -> Pin<Box<dyn Future<Output = Result<UserResponse, String>>>>>>,
     pub logout: Signal<Option<fn() -> Pin<Box<dyn Future<Output = Result<(), String>>>>>>,
-}
-
-// Alternative approach using a more Dioxus-idiomatic pattern
-#[derive(Clone, Copy)]
-pub struct AuthState {
-    pub is_authenticated: Signal<bool>,
-    pub user: Signal<Option<User>>,
-    pub token: Signal<Option<String>>, // Store JWT token
-}
-
-// Custom Default implementation: unauthenticated by default
-impl Default for AuthState {
-    fn default() -> Self {
-        Self {
-            is_authenticated: Signal::new(false),
-            user: Signal::new(None),
-            token: Signal::new(None),
-        }
-    }
 }
 
 pub fn use_auth() -> AuthContext {
@@ -45,6 +21,7 @@ pub fn use_auth() -> AuthContext {
 }
 
 // Helper function to make authenticated requests
+#[allow(dead_code)]
 async fn make_authenticated_request(token: &str, url: &str) -> Result<reqwest::Response, reqwest::Error> {
     let client = Client::new();
     client.get(url)
@@ -55,12 +32,14 @@ async fn make_authenticated_request(token: &str, url: &str) -> Result<reqwest::R
 }
 
 // Helper function to make authenticated POST requests
+#[allow(dead_code)]
 async fn make_authenticated_post_request(token: &str, url: &str, body: serde_json::Value) -> Result<reqwest::Response, reqwest::Error> {
     let client = Client::new();
+    let body_string = serde_json::to_string(&body).unwrap();
     client.post(url)
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
-        .json(&body)
+        .body(body_string)
         .send()
         .await
 }
@@ -68,7 +47,7 @@ async fn make_authenticated_post_request(token: &str, url: &str, body: serde_jso
 #[component]
 pub fn AuthProvider(children: Element) -> Element {
     let is_authenticated = use_signal(|| false);
-    let user = use_signal(|| None::<User>);
+    let user = use_signal(|| None::<UserResponse>);
     let token = use_signal(|| None::<String>);
 
     // Create the auth context with signals
@@ -100,12 +79,12 @@ pub fn AuthProvider(children: Element) -> Element {
                         log::debug!("📡 Auth check response status: {}", status_code);
                         
                         if response.status().is_success() {
-                            match response.json::<ApiResponse<User>>().await {
-                                Ok(api_response) => {
+                            match response.json::<UserResponse>().await {
+                                Ok(user_data) => {
                                     log::info!("✅ Found valid session for user: {} (ID: {})", 
-                                        api_response.data.email, api_response.data.id);
+                                        user_data.email, user_data.id);
                                     auth_context_check.is_authenticated.set(true);
-                                    auth_context_check.user.set(Some(api_response.data));
+                                    auth_context_check.user.set(Some(user_data));
                                 }
                                 Err(e) => {
                                     log::debug!("❌ Failed to parse auth check response: {}", e);
@@ -144,7 +123,7 @@ pub fn AuthProvider(children: Element) -> Element {
 
 
 
-pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Output = Result<User, String>>>> {
+pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Output = Result<UserResponse, String>>>> {
     let auth_state = use_auth();
     
     move |email: String, password: String| {
@@ -156,13 +135,14 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
             
             let client = Client::new();
             let payload = json!({ "email": email, "password": password });
+            let body_string = serde_json::to_string(&payload).unwrap();
             
             log::debug!("🌐 Making POST request to: http://127.0.0.1:8081/api/auth/login");
             
             let response = client
                 .post("http://127.0.0.1:8081/api/auth/login")
                 .header("Content-Type", "application/json")
-                .json(&payload)
+                .body(body_string)
                 .send()
                 .await;
             
@@ -176,26 +156,26 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
                     if response.status().is_success() {
                         log::debug!("✅ Login request successful, parsing response...");
                         
-                        // Try to parse as new LoginResponse format first
-                        match response.json::<ApiResponse<LoginResponse>>().await {
-                            Ok(api_response) => {
+                        // Parse AuthResponse from backend
+                        match response.json::<AuthResponse>().await {
+                            Ok(auth_response) => {
                                 log::info!("🎉 Login successful for user: {} (ID: {})", 
-                                    api_response.data.user.email, api_response.data.user.id);
-                                log::debug!("👤 User data loaded: username={}", 
-                                    api_response.data.user.username);
+                                    auth_response.user.email, auth_response.user.id);
+                                log::debug!("👤 User data loaded: name={:?}", 
+                                    auth_response.user.name);
                                 log::debug!("🔑 JWT token received and will be stored");
                                 
                                 // Update auth state with user and token
                                 auth_state.is_authenticated.set(true);
-                                auth_state.user.set(Some(api_response.data.user.clone()));
-                                auth_state.token.set(Some(api_response.data.token.clone()));
+                                auth_state.user.set(Some(auth_response.user.clone()));
+                                auth_state.token.set(Some(auth_response.token.clone()));
                                 
                                 // Test with Authorization header instead of cookies
                                 log::info!("🧪 Testing Authorization header authentication");
                                 let test_client = Client::new();
                                 match test_client.get("http://127.0.0.1:8081/api/auth/me")
                                     .header("Content-Type", "application/json")
-                                    .header("Authorization", format!("Bearer {}", api_response.data.token))
+                                    .header("Authorization", format!("Bearer {}", auth_response.token))
                                     .send().await {
                                     Ok(test_response) => {
                                         log::info!("🧪 Auth test response status: {}", test_response.status());
@@ -210,7 +190,7 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
                                     }
                                 }
                                 
-                                Ok(api_response.data.user)
+                                Ok(auth_response.user)
                             }
                             Err(e) => {
                                 log::error!("❌ Failed to parse login response: {}", e);
@@ -278,24 +258,26 @@ pub fn use_password_login() -> impl Fn(String, String) -> Pin<Box<dyn Future<Out
     }
 }
 
-pub fn use_register_user() -> impl Fn(String, String, String) -> Pin<Box<dyn Future<Output = Result<User, String>>>> {
+#[allow(dead_code)]
+pub fn use_register_user() -> impl Fn(String, String, Option<String>) -> Pin<Box<dyn Future<Output = Result<UserResponse, String>>>> {
     let auth_state = use_auth();
     
-    move |username: String, email: String, password: String| {
+    move |email: String, password: String, name: Option<String>| {
         let mut auth_state = auth_state;
         Box::pin(async move {
-            log::info!("📝 Starting registration attempt for email: {}, username: {}", email, username);
-            log::debug!("📊 Registration request details - Email length: {}, Username length: {}, Has password: {}", 
-                email.len(), username.len(), !password.is_empty());
-            
+            log::info!("📝 Starting registration attempt for email: {}, name: {:?}", email, name);
+            log::debug!("📊 Registration request details - Email length: {}, Name: {:?}, Has password: {}", 
+                email.len(), name, !password.is_empty());
             let client = Client::new();
-            let payload = json!({ "username": username, "email": email, "password": password });
+            let payload = json!({ "email": email, "password": password, "name": name });
+            let body_string = serde_json::to_string(&payload).unwrap();
             
             log::debug!("🌐 Making POST request to: http://127.0.0.1:8081/api/auth/register");
             
             let response = client
                 .post("http://127.0.0.1:8081/api/auth/register")
-                .json(&payload)
+                .header("Content-Type", "application/json")
+                .body(body_string)
                 .send()
                 .await;
             
@@ -306,21 +288,23 @@ pub fn use_register_user() -> impl Fn(String, String, String) -> Pin<Box<dyn Fut
                         status_code.as_u16(), status_code.canonical_reason().unwrap_or("Unknown"));
                     log::debug!("⏱️ Registration request completed");
                     
-                    if response.status().is_success() {
+                    if status_code.is_success() {
                         log::debug!("✅ Registration request successful, parsing response...");
                         
-                        match response.json::<ApiResponse<User>>().await {
-                            Ok(api_response) => {
+                        let response_json = response.json::<AuthResponse>().await;
+                        match response_json {
+                            Ok(auth_response) => {
                                 log::info!("🎉 Registration successful for user: {} (ID: {})", 
-                                    api_response.data.email, api_response.data.id);
-                                log::debug!("👤 New user data: username={}", 
-                                    api_response.data.username);
+                                    auth_response.user.email, auth_response.user.id);
+                                log::debug!("👤 New user data: name={:?}", 
+                                    auth_response.user.name);
                                 
                                 // Update auth state after successful registration
                                 auth_state.is_authenticated.set(true);
-                                auth_state.user.set(Some(api_response.data.clone()));
+                                auth_state.user.set(Some(auth_response.user.clone()));
+                                auth_state.token.set(Some(auth_response.token.clone()));
                                 
-                                Ok(api_response.data)
+                                Ok(auth_response.user)
                             }
                             Err(e) => {
                                 log::error!("❌ Failed to parse successful registration response: {}", e);
@@ -348,8 +332,8 @@ pub fn use_register_user() -> impl Fn(String, String, String) -> Pin<Box<dyn Fut
                                 format!("Registration failed: {}", error_body)
                             }
                             409 => {
-                                log::warn!("👥 Conflict - user already exists with email: {} or username: {}", email, username);
-                                "User with this email or username already exists".to_string()
+                                log::warn!("👥 Conflict - user already exists with email: {}", email);
+                                "User with this email already exists".to_string()
                             }
                             422 => {
                                 log::warn!("📋 Validation error during registration");
@@ -379,6 +363,7 @@ pub fn use_register_user() -> impl Fn(String, String, String) -> Pin<Box<dyn Fut
     }
 }
 
+#[allow(dead_code)]
 pub fn use_logout() -> impl Fn() -> Pin<Box<dyn Future<Output = Result<(), String>>>> {
     let auth_state = use_auth();
     

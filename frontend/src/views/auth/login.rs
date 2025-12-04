@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
-
-use crate::hooks::{use_auth, use_password_login};
-use crate::Route;
+use crate::{Route, AuthState, User};
 use crate::components::ErrorNotification;
+use shared::models::{AuthResponse, LoginRequest};
+use reqwest::Client;
  
 const LOGO: Asset = asset!("/assets/favicon.ico");
 
@@ -10,41 +10,25 @@ const LOGO: Asset = asset!("/assets/favicon.ico");
 pub fn LoginForm() -> Element {
     let mut email = use_signal(|| String::new());
     let mut password = use_signal(|| String::new());
-    let is_loading = use_signal(|| false);
-    let error_message = use_signal(|| None::<String>);
-
-    let auth = use_auth();
+    let mut is_loading = use_signal(|| false);
+    let mut error_message = use_signal(|| None::<String>);
+    let mut auth_state = use_context::<Signal<AuthState>>();
     let navigator = use_navigator();
-
 
     // Check if already authenticated
     use_effect(move || {
-        if *auth.is_authenticated.read() {
+        if auth_state.read().is_authenticated() {
             navigator.push(Route::Home {});
         }
     });
 
-    let email_signal = email.clone();
-    let password_signal = password.clone();
-    let error_message_signal = error_message.clone();
-    let is_loading_signal = is_loading.clone();
-    let navigator_signal = navigator.clone();
-
     let handle_submit = move |evt: FormEvent| {
         evt.prevent_default();
-
-        let email = email_signal.clone();
-        let password = password_signal.clone();
-        let mut error_message = error_message_signal.clone();
-        let mut is_loading = is_loading_signal.clone();
-        let navigator = navigator_signal.clone();
-        let password_login = use_password_login();
 
         let email_val = email.read().clone();
         let password_val = password.read().clone();
 
-        println!("Login attempt for: {}", email_val); // Debug log
-
+        // Validation
         if email_val.is_empty() || password_val.is_empty() {
             if email_val.is_empty() && password_val.is_empty() {
                 error_message.set(Some("Email and password are required".to_string()));
@@ -65,17 +49,56 @@ pub fn LoginForm() -> Element {
         error_message.set(None);
         is_loading.set(true);
 
+        // Login request
         spawn(async move {
-            match password_login(email_val.clone(), password_val.clone()).await {
-                Ok(_user) => {
-                    // Success - auth state is already updated by the hook
-                    is_loading.set(false);
-                    navigator.push(Route::Home {});
+            let client = Client::new();
+            let login_req = LoginRequest {
+                email: email_val.clone(),
+                password: password_val.clone(),
+            };
+
+            match client
+                .post("http://127.0.0.1:8081/api/auth/login")
+                .header("Content-Type", "application/json")
+                .json(&login_req)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() {
+                        match response.json::<AuthResponse>().await {
+                            Ok(auth_response) => {
+                                // Convert UserResponse to User
+                                let user = User {
+                                    id: auth_response.user.id,
+                                    email: auth_response.user.email,
+                                    name: auth_response.user.name,
+                                    role: auth_response.user.role,
+                                };
+                                
+                                // Update auth state
+                                auth_state.write().login(user, auth_response.token);
+                                is_loading.set(false);
+                                navigator.push(Route::Home {});
+                            }
+                            Err(e) => {
+                                is_loading.set(false);
+                                error_message.set(Some(format!("Failed to parse response: {}", e)));
+                            }
+                        }
+                    } else {
+                        let status_code = response.status().as_u16();
+                        let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                        is_loading.set(false);
+                        error_message.set(Some(match status_code {
+                            401 => "Invalid email or password".to_string(),
+                            _ => error_text,
+                        }));
+                    }
                 }
-                Err(error) => {
-                    // Error - display the message from the hook
+                Err(e) => {
                     is_loading.set(false);
-                    error_message.set(Some(error));
+                    error_message.set(Some(format!("Network error: {}", e)));
                 }
             }
         });
@@ -94,7 +117,7 @@ pub fn LoginForm() -> Element {
                                 src: LOGO,
                                 alt: "logo",
                             }
-                            "Mortgage Portal"
+                            "Ferrisbase"
                         }
                     }
                     div { class: "space-y-6 px-4",

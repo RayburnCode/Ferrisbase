@@ -3,17 +3,4 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
-#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "goal")]
-pub enum Goal {
-    #[sea_orm(string_value = "BuyFirstProperty")]
-    BuyFirstProperty,
-    #[sea_orm(string_value = "MaxCashFlow")]
-    MaxCashFlow,
-    #[sea_orm(string_value = "Appreciation")]
-    Appreciation,
-    #[sea_orm(string_value = "Scale")]
-    Scale,
-    #[sea_orm(string_value = "Exchange")]
-    Exchange,
-}
+

@@ -51,12 +51,15 @@ pub fn Home() -> Element {
                         Link {
                             to: Route::LoginForm {},
                             id: "default".to_string(),
+                            span { class: "inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500",
+                                "Get Started"
+                            }
                         }
-                        span { class: "inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500",
-                            "Get Started"
-                        }
-                        button { class: "inline-flex items-center justify-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium py-3 px-6 rounded-md transition duration-200",
-                            "Learn More"
+
+                        Link { to: Route::FAQ {}, id: "default".to_string(),
+                            button { class: "inline-flex items-center justify-center bg-white border border-gray-200 hover:bg-gray-50 text-gray-800 font-medium py-3 px-6 rounded-md transition duration-200",
+                                "Learn More"
+                            }
                         }
                     }
                 }

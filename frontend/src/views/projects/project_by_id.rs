@@ -10,7 +10,7 @@ pub fn ProjectById(id: String) -> Element {
             div { class: "max-w-7xl mx-auto mb-8",
                 div { class: "flex items-center justify-between",
                     div {
-                        h1 { class: "text-4xl font-bold text-gray-900 mb-2", "Project: {id}" }
+                        h1 { class: "text-4xl font-bold text-gray-900 mb-2", "{id}" }
                         p { class: "text-gray-600", "Monitor and manage your project statistics" }
                     }
                 }

@@ -3,7 +3,7 @@ use axum::{
     Json,
     http::StatusCode,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use crate::config::AppState;
 use crate::error::AppResult;
@@ -137,4 +137,43 @@ pub async fn delete_table_row(
     .await?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExecuteSqlRequest {
+    pub query: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ExecuteSqlResponse {
+    pub rows: Vec<JsonValue>,
+    pub rows_affected: Option<u64>,
+    pub execution_time_ms: u128,
+}
+
+/// POST /api/sql/:project_slug
+/// Execute arbitrary SQL query within project context
+pub async fn execute_sql(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(project_slug): Path<String>,
+    Json(request): Json<ExecuteSqlRequest>,
+) -> AppResult<Json<ExecuteSqlResponse>> {
+    let start_time = std::time::Instant::now();
+    
+    let (rows, rows_affected) = services::execute_sql(
+        &state.db,
+        &claims.sub,
+        &project_slug,
+        &request.query,
+    )
+    .await?;
+    
+    let execution_time_ms = start_time.elapsed().as_millis();
+    
+    Ok(Json(ExecuteSqlResponse {
+        rows,
+        rows_affected,
+        execution_time_ms,
+    }))
 }

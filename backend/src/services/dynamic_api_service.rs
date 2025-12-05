@@ -255,6 +255,99 @@ pub async fn delete_table_row(
     Ok(())
 }
 
+/// Execute arbitrary SQL query within project context
+/// This allows users to run custom SQL queries but only on their own project tables
+pub async fn execute_sql(
+    db: &DatabaseConnection,
+    user_id: &str,
+    project_slug: &str,
+    sql_query: &str,
+) -> AppResult<(Vec<JsonValue>, Option<u64>)> {
+    let owner_uuid = Uuid::parse_str(user_id)
+        .map_err(|_| AppError::BadRequest("Invalid user ID".to_string()))?;
+
+    // Verify project ownership
+    let _project = projects::Entity::find()
+        .filter(projects::Column::Slug.eq(project_slug))
+        .filter(projects::Column::OwnerId.eq(owner_uuid))
+        .one(db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Project not found".to_string()))?;
+
+    // Basic SQL injection prevention - reject dangerous keywords
+    let sql_lower = sql_query.to_lowercase();
+    let dangerous_patterns = [
+        "drop database",
+        "drop schema", 
+        "create database",
+        "create schema",
+        "alter database",
+        "alter schema",
+    ];
+    
+    for pattern in &dangerous_patterns {
+        if sql_lower.contains(pattern) {
+            return Err(AppError::BadRequest(
+                format!("Query contains forbidden pattern: {}", pattern)
+            ));
+        }
+    }
+
+    // Check if query accesses system tables/schemas that should be restricted
+    let restricted_patterns = [
+        "pg_authid",
+        "pg_shadow",
+        "pg_user",
+    ];
+    
+    for pattern in &restricted_patterns {
+        if sql_lower.contains(pattern) {
+            return Err(AppError::BadRequest(
+                format!("Access to {} is not allowed", pattern)
+            ));
+        }
+    }
+
+    // Determine if this is a SELECT query or a modification query
+    let is_select = sql_lower.trim().starts_with("select") || 
+                    sql_lower.trim().starts_with("with") ||
+                    sql_lower.trim().starts_with("show") ||
+                    sql_lower.trim().starts_with("explain");
+    
+    if is_select {
+        // For SELECT queries, wrap in a subquery to convert to JSON
+        let wrapped_query = format!(
+            "SELECT row_to_json(t) as data FROM ({}) t",
+            sql_query
+        );
+        
+        let stmt = Statement::from_string(DatabaseBackend::Postgres, wrapped_query);
+        let result = db.query_all(stmt).await
+            .map_err(|e| AppError::BadRequest(format!("SQL execution error: {}", e)))?;
+        
+        // Convert rows to JSON and get count before moving
+        let row_count = result.len() as u64;
+        let rows: Vec<JsonValue> = result
+            .into_iter()
+            .filter_map(|row| {
+                row.try_get::<JsonValue>("", "data").ok()
+            })
+            .collect();
+        
+        Ok((rows, Some(row_count)))
+    } else {
+        // For INSERT, UPDATE, DELETE, CREATE TABLE etc.
+        let stmt = Statement::from_string(DatabaseBackend::Postgres, sql_query.to_string());
+        let result = db.execute(stmt).await
+            .map_err(|e| AppError::BadRequest(format!("SQL execution error: {}", e)))?;
+        
+        let rows_affected = result.rows_affected();
+        
+        // Return empty result set with row count
+        Ok((vec![], Some(rows_affected)))
+    }
+}
+
 /// Helper function to verify table access and ownership
 async fn verify_table_access(
     db: &DatabaseConnection,

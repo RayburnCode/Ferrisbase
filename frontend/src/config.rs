@@ -30,4 +30,14 @@ pub mod endpoints {
     pub fn project_by_slug(slug: &str) -> String {
         format!("{}/api/projects/{}", API_BASE_URL, slug)
     }
+
+    // SQL execution endpoint
+    pub fn execute_sql(project_slug: &str) -> String {
+        format!("{}/api/sql/{}", API_BASE_URL, project_slug)
+    }
+
+    // Dynamic data endpoints
+    pub fn table_data(project_slug: &str, table_name: &str) -> String {
+        format!("{}/api/data/{}/{}", API_BASE_URL, project_slug, table_name)
+    }
 }

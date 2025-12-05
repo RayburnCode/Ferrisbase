@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use shared::models::{CreateTableRequest, ColumnDefinition, ColumnDataType};
-use crate::hooks::{use_list_tables, use_create_table, use_delete_table};
+use crate::hooks::{use_list_tables, use_create_table, use_delete_table, use_table_rows, use_get_table};
+use serde_json::Value as JsonValue;
 
 /// The Table Editor page - Interface for managing table schemas
 #[component]
@@ -13,6 +14,15 @@ pub fn TableEditor(id: String) -> Element {
     let mut tables_resource = use_list_tables(id.clone());
     let create_table_action = use_create_table(id.clone());
     let delete_table_action = use_delete_table(id.clone());
+    
+    // Fetch table details when a table is selected - always call hooks unconditionally
+    let table_details_resource = use_get_table(
+        id.clone(), 
+        selected_table().unwrap_or_else(|| "".to_string())
+    );
+    
+    // Fetch table rows when a table is selected
+    let table_rows_resource = use_table_rows(id.clone(), selected_table());
     
     // Form state for creating a new table
     let mut table_name = use_signal(|| String::new());
@@ -140,17 +150,147 @@ pub fn TableEditor(id: String) -> Element {
             // Main Content Area
             div { class: "flex-1 flex flex-col overflow-hidden",
                 if let Some(ref name) = selected_table() {
-                    // Show selected table placeholder
-                    div { class: "flex items-center justify-center h-full",
-                        div { class: "text-center p-8",
-                            h2 { class: "text-2xl font-bold text-gray-900 mb-4", "Table: {name}" }
-                            p { class: "text-gray-600",
-                                "Table details view will be implemented with row data editing."
+                    // Show selected table with data
+                    div { class: "flex-1 flex flex-col",
+                        // Table Header
+                        div { class: "bg-white border-b border-gray-200 px-6 py-4",
+                            div { class: "flex items-center justify-between",
+                                div {
+                                    h2 { class: "text-2xl font-bold text-gray-900",
+                                        "{name}"
+                                    }
+                                    match &*table_details_resource.read_unchecked() {
+                                        Some(Ok(details)) => rsx! {
+                                            p { class: "text-sm text-gray-600 mt-1",
+                                                "{details.row_count} rows • {details.columns.len()} columns"
+                                            }
+                                        },
+                                        _ => rsx! {
+                                            p { class: "text-sm text-gray-600 mt-1", "Loading..." }
+                                        },
+                                    }
+                                }
+                                button {
+                                    class: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition",
+                                    onclick: move |_| show_delete_confirm.set(true),
+                                    "Delete Table"
+                                }
                             }
-                            button {
-                                class: "mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition",
-                                onclick: move |_| show_delete_confirm.set(true),
-                                "Delete Table"
+                        }
+                        // Table Data - Excel-like view
+                        div { class: "flex-1 overflow-auto bg-gray-50",
+                            match (
+                                &*table_details_resource.read_unchecked(),
+                                &*table_rows_resource.read_unchecked(),
+                            ) {
+                                (Some(Ok(details)), Some(Ok(rows))) => rsx! {
+                                    div { class: "inline-block min-w-full",
+                                        table { class: "border-collapse",
+                                            // Header row
+                                            thead { class: "bg-gray-100 sticky top-0 z-10",
+                                                tr {
+                                                    // Row number header
+                                                    th { class: "border border-gray-300 bg-gray-200 px-4 py-2 text-center text-xs font-semibold text-gray-600 w-16",
+                                                        "#"
+                                                    }
+                                                    // Column headers
+                                                    for col in &details.columns {
+                                                        th { class: "border border-gray-300 bg-white px-4 py-3 text-left text-xs font-semibold text-gray-700 min-w-[150px]",
+                                                            div { class: "flex flex-col",
+                                                                div { class: "font-bold text-sm", "{col.display_name}" }
+                                                                div { class: "text-gray-500 font-normal mt-1",
+                                                                    span { class: "text-xs", "{col.data_type}" }
+                                                                    if !col.is_nullable {
+                                                                        span { class: "ml-2 text-red-600", "*" }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            // Data rows
+                                            tbody {
+                                                if rows.is_empty() {
+                                                    tr {
+                                                        td {
+                                                            colspan: "{details.columns.len() + 1}",
+                                                            class: "border border-gray-300 px-4 py-12 text-center text-gray-500",
+                                                            div { class: "flex flex-col items-center",
+                                                                svg {
+                                                                    class: "h-12 w-12 text-gray-300 mb-3",
+                                                                    fill: "none",
+                                                                    stroke: "currentColor",
+                                                                    view_box: "0 0 24 24",
+                                                                    path {
+                                                                        stroke_linecap: "round",
+                                                                        stroke_linejoin: "round",
+                                                                        stroke_width: "2",
+                                                                        d: "M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4",
+                                                                    }
+                                                                }
+                                                                p { class: "font-medium", "No data in this table" }
+                                                                p { class: "text-sm mt-1", "Add rows using the SQL Editor or API" }
+                                                            }
+                                                        }
+                                                    }
+                                                } else {
+                                                    for (row_idx , row) in rows.iter().enumerate() {
+                                                        tr {
+                                                            key: "{row_idx}",
+                                                            class: "hover:bg-blue-50 transition",
+                                                            // Row number
+                                                            td { class: "border border-gray-300 bg-gray-100 px-4 py-2 text-center text-xs font-semibold text-gray-600",
+                                                                "{row_idx + 1}"
+                                                            }
+                                                            // Data cells
+                                                            for col in &details.columns {
+                                                                td { class: "border border-gray-300 px-4 py-2 text-sm",
+                                                                    {
+                                                                        if let Some(obj) = row.as_object() {
+                                                                            if let Some(value) = obj.get(&col.name) {
+                                                                                render_cell_value(value)
+                                                                            } else {
+                                                                                rsx! {
+                                                                                    span { class: "text-gray-400 italic", "null" }
+                                                                                }
+                                                                            }
+                                                                        } else {
+                                                                            rsx! {
+                                                                                span { class: "text-gray-400 italic", "-" }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                (Some(Ok(_)), Some(Err(e))) => rsx! {
+                                    div { class: "flex items-center justify-center h-full p-8",
+                                        div { class: "text-center",
+                                            p { class: "text-red-600 font-semibold mb-2", "Error loading table data" }
+                                            p { class: "text-sm text-gray-600", "{e}" }
+                                        }
+                                    }
+                                },
+                                (Some(Err(e)), _) => rsx! {
+                                    div { class: "flex items-center justify-center h-full p-8",
+                                        div { class: "text-center",
+                                            p { class: "text-red-600 font-semibold mb-2", "Error loading table schema" }
+                                            p { class: "text-sm text-gray-600", "{e}" }
+                                        }
+                                    }
+                                },
+                                _ => rsx! {
+                                    div { class: "flex items-center justify-center h-full",
+                                        div { class: "animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" }
+                                    }
+                                },
                             }
                         }
                     }
@@ -170,7 +310,7 @@ pub fn TableEditor(id: String) -> Element {
                                     d: "M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
                                 }
                             }
-                            p { class: "text-lg font-medium", "Select a table to view its schema" }
+                            p { class: "text-lg font-medium", "Select a table to view its data" }
                             p { class: "text-sm mt-2", "or create a new table to get started" }
                         }
                     }
@@ -455,5 +595,37 @@ pub fn TableEditor(id: String) -> Element {
                 }
             }
         }
+    }
+}
+
+/// Helper function to render a JSON value in a table cell
+fn render_cell_value(value: &JsonValue) -> Element {
+    match value {
+        JsonValue::Null => rsx! {
+            span { class: "text-gray-400 italic", "null" }
+        },
+        JsonValue::Bool(b) => rsx! {
+            span { class: "text-purple-600 font-mono", "{b}" }
+        },
+        JsonValue::Number(n) => rsx! {
+            span { class: "text-blue-600 font-mono", "{n}" }
+        },
+        JsonValue::String(s) => {
+            // Truncate long strings
+            let display_text = if s.len() > 100 {
+                format!("{}...", &s[..100])
+            } else {
+                s.to_string()
+            };
+            rsx! {
+                span { class: "text-gray-900", "{display_text}" }
+            }
+        },
+        JsonValue::Array(arr) => rsx! {
+            span { class: "text-gray-600 text-xs font-mono", "[{arr.len()} items]" }
+        },
+        JsonValue::Object(obj) => rsx! {
+            span { class: "text-gray-600 text-xs font-mono", "{{{obj.len()} fields}}" }
+        },
     }
 }

@@ -46,6 +46,16 @@ pub fn create_router(state: AppState) -> Router {
             middleware::require_auth
         ));
 
+    // SQL execution API
+    let sql_api = Router::new()
+        .route("/{project_slug}",
+            post(handlers::execute_sql)
+        )
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            middleware::require_auth
+        ));
+
     Router::new()
         // Health check
         .route("/health", get(health_check))
@@ -62,6 +72,8 @@ pub fn create_router(state: AppState) -> Router {
                 .nest("/projects", protected_projects)
                 // Dynamic data API (protected)
                 .nest("/data", dynamic_api)
+                // SQL execution API (protected)
+                .nest("/sql", sql_api)
         )
         .with_state(state)
 }

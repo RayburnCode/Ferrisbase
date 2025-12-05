@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use futures::stream::StreamExt;
 use shared::models::{CreateTableRequest, TableResponse, TableSummary};
+use serde_json::Value as JsonValue;
 use crate::config::API_BASE_URL;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -60,6 +61,11 @@ pub fn use_get_table(project_slug: String, table_name: String) -> Resource<Resul
         let auth_state = auth_state.clone();
         
         async move {
+            // If no table name, return early without making a request
+            if table_name.is_empty() {
+                return Err("No table selected".to_string());
+            }
+            
             let token = auth_state.read().token.clone().ok_or("Not authenticated")?;
             
             let url = format!("{}/api/projects/{}/tables/{}", API_BASE_URL, project_slug, table_name);
@@ -137,6 +143,49 @@ pub fn use_delete_table(
                     .send()
                     .await;
             }
+        }
+    })
+}
+
+/// Hook to fetch table row data
+pub fn use_table_rows(
+    project_slug: String,
+    table_name: Option<String>,
+) -> Resource<Result<Vec<JsonValue>, String>> {
+    let auth_state = use_context::<Signal<crate::AuthState>>();
+    
+    use_resource(move || {
+        let project_slug = project_slug.clone();
+        let table_name = table_name.clone();
+        let auth_state = auth_state.clone();
+        
+        async move {
+            // If no table is selected, return empty
+            let table_name = match table_name {
+                Some(name) => name,
+                None => return Ok(vec![]),
+            };
+            
+            let token = auth_state.read().token.clone().ok_or("Not authenticated")?;
+            
+            let url = format!("{}/api/data/{}/{}?limit=100", API_BASE_URL, project_slug, table_name);
+            let response = reqwest::Client::new()
+                .get(&url)
+                .header("Authorization", format!("Bearer {}", token))
+                .send()
+                .await
+                .map_err(|e| format!("Network error: {}", e))?;
+            
+            if !response.status().is_success() {
+                let status = response.status();
+                let error_text = response.text().await.unwrap_or_default();
+                return Err(format!("HTTP {}: {}", status, error_text));
+            }
+            
+            response
+                .json::<Vec<JsonValue>>()
+                .await
+                .map_err(|e| format!("Failed to parse response: {}", e))
         }
     })
 }

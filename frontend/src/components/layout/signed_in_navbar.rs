@@ -1,12 +1,14 @@
 use crate::{Route, AuthState};
 use dioxus::prelude::*;
 
+//Logo / Breadcrumbs / Nav links / User menu
 
 #[component]
 pub fn SignedInNavbar(children: Element) -> Element {
     const LOGO: Asset = asset!("/assets/Original_Ferris.svg");
 
-    let current_route = use_route::<Route>();
+    let route = use_route::<Route>();
+    let route_clone = route.clone();
     let mut is_mobile_menu_open = use_signal(|| false);
     let mut show_user_menu = use_signal(|| false);
     let mut auth_state = use_context::<Signal<AuthState>>();
@@ -14,37 +16,139 @@ pub fn SignedInNavbar(children: Element) -> Element {
     let is_authenticated = auth_state.read().is_authenticated();
     let user = auth_state.read().user.clone();
 
+    // Generate breadcrumb items based on current route
+    let breadcrumbs = use_memo(move || {
+        let mut items: Vec<(String, Option<Route>)> = vec![];
+        
+        match route_clone {
+            Route::Projects {} => {
+                items.push(("Projects".to_string(), None));
+            }
+            Route::CreateNewProject {} => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push(("New Project".to_string(), None));
+            }
+            Route::UserSettings {} => {
+                items.push(("Settings".to_string(), None));
+            }
+            Route::ProjectById { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), None));
+            }
+            Route::TableEditor { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Table Editor".to_string(), None));
+            }
+            Route::SQLEditor { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("SQL Editor".to_string(), None));
+            }
+            Route::Database { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Database".to_string(), None));
+            }
+            Route::Authentication { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Authentication".to_string(), None));
+            }
+            Route::Reports { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Reports".to_string(), None));
+            }
+            Route::Logs { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Logs".to_string(), None));
+            }
+            Route::APIDocs { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("API Docs".to_string(), None));
+            }
+            Route::ProjectSettings { ref id } => {
+                items.push(("Projects".to_string(), Some(Route::Projects {})));
+                items.push((id.clone(), Some(Route::ProjectById { id: id.clone() })));
+                items.push(("Settings".to_string(), None));
+            }
+            _ => {}
+        }
+        
+        items
+    });
+
     rsx! {
         nav { class: "sticky top-0 z-50 w-full bg-white backdrop-blur-md border-b border-gray-200 shadow-sm",
-            div { class: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+            div { class: "px-4 sm:px-6 lg:px-8",
                 div { class: "flex h-16 items-center justify-between",
-                    // Logo/Brand
-                    div { class: "flex items-center gap-8",
+                    // Logo and Breadcrumbs (Desktop)
+                    div { class: "flex items-center gap-6 flex-1 min-w-0",
                         // Logo
                         Link {
-                            to: Route::Home {},
-                            class: "flex items-center gap-2 text-2xl font-bold",
-                            img { class: "text-blue-600 w-8 h-8", src: "{LOGO}" }
-                            span { class: "text-gray-900", "Ferrisbase" }
+                            to: Route::Projects {},
+                            class: "flex items-center gap-2 text-xl font-bold shrink-0",
+                            img { class: "w-8 h-8", src: "{LOGO}" }
+                            span { class: "hidden sm:inline text-gray-900", "Ferrisbase" }
                         }
-                        // Desktop navigation
-                        div { class: "hidden md:flex items-center space-x-6",
-                            Link {
-                                to: Route::Home {},
-                                class: if matches!(current_route, Route::Home {}) { "text-blue-600 font-semibold px-3 py-2 text-sm transition-colors" } else { "text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors" },
-                                "Home"
-                            }
-                            if is_authenticated {
-                                Link {
-                                    to: Route::Projects {},
-                                    class: if matches!(current_route, Route::Projects {}) { "text-blue-600 font-semibold px-3 py-2 text-sm transition-colors" } else { "text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors" },
-                                    "Projects"
+
+                        // Breadcrumbs (Desktop only)
+                        nav {
+                            aria_label: "Breadcrumb",
+                            class: "hidden md:flex items-center min-w-0 flex-1",
+                            ol { class: "inline-flex items-center space-x-1",
+                                // Home/Dashboard breadcrumb
+                                li { class: "inline-flex items-center",
+                                    Link {
+                                        to: Route::Projects {},
+                                        class: "inline-flex items-center text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors",
+                                        svg {
+                                            class: "w-4 h-4",
+                                            fill: "currentColor",
+                                            view_box: "0 0 20 20",
+                                            xmlns: "http://www.w3.org/2000/svg",
+                                            path { d: "M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" }
+                                        }
+                                    }
                                 }
-                            }
-                            Link {
-                                to: Route::FAQ {},
-                                class: if matches!(current_route, Route::FAQ {}) { "text-blue-600 font-semibold px-3 py-2 text-sm transition-colors" } else { "text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors" },
-                                "FAQ"
+                                // Dynamic breadcrumb items
+                                for (index , (label , route)) in breadcrumbs().iter().enumerate() {
+                                    li { key: "{index}",
+                                        div { class: "flex items-center",
+                                            // Separator
+                                            svg {
+                                                class: "w-5 h-5 text-gray-400 mx-1",
+                                                fill: "currentColor",
+                                                view_box: "0 0 20 20",
+                                                xmlns: "http://www.w3.org/2000/svg",
+                                                path {
+                                                    fill_rule: "evenodd",
+                                                    d: "M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z",
+                                                    clip_rule: "evenodd",
+                                                }
+                                            }
+                                            // Breadcrumb link or text
+                                            {
+                                                if let Some(r) = route {
+                                                    rsx! {
+                                                        Link {
+                                                            to: r.clone(),
+                                                            class: "text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors truncate max-w-[150px]",
+                                                            "{label}"
+                                                        }
+                                                    }
+                                                } else {
+                                                    rsx! {
+                                                        span { class: "text-sm font-medium text-gray-900 truncate max-w-[150px]", "{label}" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -203,24 +307,18 @@ pub fn SignedInNavbar(children: Element) -> Element {
                 div { class: "md:hidden border-t border-gray-200 bg-white",
                     div { class: "px-4 py-3 space-y-2",
                         Link {
-                            to: Route::Home {},
-                            class: if matches!(current_route, Route::Home {}) { "block px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg" } else { "block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" },
+                            to: Route::Projects {},
+                            class: if matches!(route, Route::Projects {}) { "block px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg" } else { "block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" },
                             onclick: move |_| is_mobile_menu_open.set(false),
-                            "Home"
+                            "Projects"
                         }
                         if is_authenticated {
                             Link {
-                                to: Route::Projects {},
-                                class: if matches!(current_route, Route::Projects {}) { "block px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg" } else { "block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" },
+                                to: Route::UserSettings {},
+                                class: if matches!(route, Route::UserSettings {}) { "block px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg" } else { "block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" },
                                 onclick: move |_| is_mobile_menu_open.set(false),
-                                "Projects"
+                                "Settings"
                             }
-                        }
-                        Link {
-                            to: Route::FAQ {},
-                            class: if matches!(current_route, Route::FAQ {}) { "block px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-lg" } else { "block px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg" },
-                            onclick: move |_| is_mobile_menu_open.set(false),
-                            "FAQ"
                         }
                     }
                     // Mobile auth section
@@ -281,4 +379,4 @@ pub fn SignedInNavbar(children: Element) -> Element {
             }
         }
     }
-}
+    }

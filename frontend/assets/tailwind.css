@@ -77,7 +77,6 @@
     --container-md: 28rem;
     --container-xl: 36rem;
     --container-2xl: 42rem;
-    --container-3xl: 48rem;
     --container-4xl: 56rem;
     --container-7xl: 80rem;
     --text-xs: 0.75rem;
@@ -103,7 +102,6 @@
     --text-7xl: 4.5rem;
     --text-7xl--line-height: 1;
     --font-weight-light: 300;
-    --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
@@ -337,6 +335,9 @@
   .-mx-1\.5 {
     margin-inline: calc(var(--spacing) * -1.5);
   }
+  .mx-1 {
+    margin-inline: calc(var(--spacing) * 1);
+  }
   .mx-6 {
     margin-inline: calc(var(--spacing) * 6);
   }
@@ -544,6 +545,9 @@
   .max-w-7xl {
     max-width: var(--container-7xl);
   }
+  .max-w-\[150px\] {
+    max-width: 150px;
+  }
   .max-w-md {
     max-width: var(--container-md);
   }
@@ -560,6 +564,9 @@
     flex: 1;
   }
   .flex-shrink-0 {
+    flex-shrink: 0;
+  }
+  .shrink-0 {
     flex-shrink: 0;
   }
   .translate-x-6 {
@@ -682,18 +689,18 @@
   .gap-x-6 {
     column-gap: calc(var(--spacing) * 6);
   }
+  .space-x-1 {
+    :where(& > :not(:last-child)) {
+      --tw-space-x-reverse: 0;
+      margin-inline-start: calc(calc(var(--spacing) * 1) * var(--tw-space-x-reverse));
+      margin-inline-end: calc(calc(var(--spacing) * 1) * calc(1 - var(--tw-space-x-reverse)));
+    }
+  }
   .space-x-4 {
     :where(& > :not(:last-child)) {
       --tw-space-x-reverse: 0;
       margin-inline-start: calc(calc(var(--spacing) * 4) * var(--tw-space-x-reverse));
       margin-inline-end: calc(calc(var(--spacing) * 4) * calc(1 - var(--tw-space-x-reverse)));
-    }
-  }
-  .space-x-6 {
-    :where(& > :not(:last-child)) {
-      --tw-space-x-reverse: 0;
-      margin-inline-start: calc(calc(var(--spacing) * 6) * var(--tw-space-x-reverse));
-      margin-inline-end: calc(calc(var(--spacing) * 6) * calc(1 - var(--tw-space-x-reverse)));
     }
   }
   .divide-y {
@@ -1682,6 +1689,11 @@
   .disabled\:opacity-75 {
     &:disabled {
       opacity: 75%;
+    }
+  }
+  .sm\:inline {
+    @media (width >= 40rem) {
+      display: inline;
     }
   }
   .sm\:grid-cols-2 {

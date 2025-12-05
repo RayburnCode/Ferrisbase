@@ -21,7 +21,7 @@ pub fn RegisterForm() -> Element {
     // Check if already authenticated
     use_effect(move || {
         if auth_state.read().is_authenticated() {
-            navigator.push(Route::Home {});
+            navigator.push(Route::Projects {});
         }
     });
 
@@ -97,7 +97,7 @@ pub fn RegisterForm() -> Element {
                                 // Update auth state
                                 auth_state.write().login(user, auth_response.token);
                                 is_loading.set(false);
-                                navigator.push(Route::Home {});
+                                navigator.push(Route::Projects {});
                             }
                             Err(e) => {
                                 is_loading.set(false);

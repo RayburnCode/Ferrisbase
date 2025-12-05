@@ -250,151 +250,158 @@ pub fn TableEditor(id: String) -> Element {
                                     "+ Add Column"
                                 }
                             }
-                            if columns().is_empty() {
-                                div { class: "text-center py-8 bg-gray-50 rounded border-2 border-dashed border-gray-300",
-                                    p { class: "text-gray-500", "No columns added yet" }
-                                    p { class: "text-sm text-gray-400 mt-1",
-                                        "Tables will automatically get id, created_at, and updated_at columns"
+                            // Info message about auto-generated columns
+                            div { class: "mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700",
+                                "ℹ️ All tables automatically include: "
+                                span { class: "font-semibold", "id" }
+                                ", "
+                                span { class: "font-semibold", "created_at" }
+                                ", and "
+                                span { class: "font-semibold", "updated_at" }
+                                " columns"
+                            }
+                            {
+                                let cols = columns();
+                                if cols.is_empty() {
+                                    rsx! {
+                                        div { class: "text-center py-8 bg-gray-50 rounded border-2 border-dashed border-gray-300",
+                                            p { class: "text-gray-500", "No custom columns added yet" }
+                                            p { class: "text-sm text-gray-400 mt-1", "Click '+ Add Column' to define your table schema" }
+                                        }
                                     }
-                                }
-                            } else {
-                                div { class: "space-y-4",
-                                    for (idx , col) in columns().iter().enumerate() {
-                                        div {
-                                            key: "{idx}",
-                                            class: "p-4 border border-gray-200 rounded-lg space-y-3",
-                                            div { class: "flex items-center justify-between mb-3",
-                                                h4 { class: "font-medium text-gray-900",
-                                                    "Column {idx + 1}"
-                                                }
-                                                button {
-                                                    class: "text-red-600 hover:text-red-700 text-sm font-medium",
-                                                    onclick: move |_| remove_column(idx),
-                                                    "Remove"
-                                                }
-                                            }
-                                            div { class: "grid grid-cols-2 gap-3",
+                                } else {
+                                    rsx! {
+                                        div { class: "space-y-4",
+                                            for (idx , col) in cols.iter().enumerate() {
                                                 div {
-                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
-                                                        "Column Name"
-                                                    }
-                                                    input {
-                                                        r#type: "text",
-                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
-                                                        placeholder: "e.g. email",
-                                                        value: "{col.name}",
-                                                        oninput: {
-                                                            let idx = idx;
-                                                            move |e| {
-                                                                let mut cols = columns();
-                                                                cols[idx].name = e.value().clone();
-                                                                columns.set(cols);
-                                                            }
-                                                        },
-                                                    }
-                                                }
-                                                div {
-                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
-                                                        "Display Name"
-                                                    }
-                                                    input {
-                                                        r#type: "text",
-                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
-                                                        placeholder: "e.g. Email Address",
-                                                        value: "{col.display_name}",
-                                                        oninput: {
-                                                            let idx = idx;
-                                                            move |e| {
-                                                                let mut cols = columns();
-                                                                cols[idx].display_name = e.value().clone();
-                                                                columns.set(cols);
-                                                            }
-                                                        },
-                                                    }
-                                                }
-                                                div {
-                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
-                                                        "Data Type"
-                                                    }
-                                                    select {
-                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
-                                                        onchange: {
-                                                            let idx = idx;
-                                                            move |e| {
-                                                                let mut cols = columns();
-                                                                cols[idx].data_type = match e.value().as_str() {
-                                                                    "Integer" => ColumnDataType::Integer,
-                                                                    "BigInt" => ColumnDataType::BigInt,
-                                                                    "Decimal" => ColumnDataType::Decimal,
-                                                                    "Boolean" => ColumnDataType::Boolean,
-                                                                    "Timestamp" => ColumnDataType::Timestamp,
-                                                                    "Date" => ColumnDataType::Date,
-                                                                    "Json" => ColumnDataType::Json,
-                                                                    "Uuid" => ColumnDataType::Uuid,
-                                                                    _ => ColumnDataType::Text,
-                                                                };
-                                                                columns.set(cols);
-                                                            }
-                                                        },
-                                                        option { value: "Text", "Text" }
-                                                        option { value: "Integer", "Integer" }
-                                                        option { value: "BigInt", "BigInt" }
-                                                        option { value: "Decimal", "Decimal" }
-                                                        option { value: "Boolean", "Boolean" }
-                                                        option { value: "Timestamp", "Timestamp" }
-                                                        option { value: "Date", "Date" }
-                                                        option { value: "Json", "JSON" }
-                                                        option { value: "Uuid", "UUID" }
-                                                    }
-                                                }
-                                                div { class: "col-span-2 flex gap-4",
-                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
-                                                        input {
-                                                            r#type: "checkbox",
-                                                            class: "rounded border-gray-300",
-                                                            checked: col.is_nullable,
-                                                            onchange: {
-                                                                let idx = idx;
-                                                                move |e| {
-                                                                    let mut cols = columns();
-                                                                    cols[idx].is_nullable = e.checked();
-                                                                    columns.set(cols);
-                                                                }
-                                                            },
+                                                    key: "{idx}",
+                                                    class: "p-4 border border-gray-200 rounded-lg space-y-3",
+                                                    div { class: "flex items-center justify-between mb-3",
+                                                        h4 { class: "font-medium text-gray-900", "Column {idx + 1}" }
+                                                        button {
+                                                            class: "text-red-600 hover:text-red-700 text-sm font-medium",
+                                                            onclick: move |_| remove_column(idx),
+                                                            "Remove"
                                                         }
-                                                        "Nullable"
                                                     }
-                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
-                                                        input {
-                                                            r#type: "checkbox",
-                                                            class: "rounded border-gray-300",
-                                                            checked: col.is_primary_key,
-                                                            onchange: {
-                                                                let idx = idx;
-                                                                move |e| {
-                                                                    let mut cols = columns();
-                                                                    cols[idx].is_primary_key = e.checked();
-                                                                    columns.set(cols);
-                                                                }
-                                                            },
+                                                    div { class: "grid grid-cols-2 gap-3",
+                                                        div {
+                                                            label { class: "block text-xs font-medium text-gray-600 mb-1", "Column Name" }
+                                                            input {
+                                                                r#type: "text",
+                                                                class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                                placeholder: "e.g. email",
+                                                                value: "{col.name}",
+                                                                oninput: {
+                                                                    let idx = idx;
+                                                                    move |e| {
+                                                                        let mut cols = columns();
+                                                                        cols[idx].name = e.value().clone();
+                                                                        columns.set(cols);
+                                                                    }
+                                                                },
+                                                            }
                                                         }
-                                                        "Primary Key"
-                                                    }
-                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
-                                                        input {
-                                                            r#type: "checkbox",
-                                                            class: "rounded border-gray-300",
-                                                            checked: col.is_unique,
-                                                            onchange: {
-                                                                let idx = idx;
-                                                                move |e| {
-                                                                    let mut cols = columns();
-                                                                    cols[idx].is_unique = e.checked();
-                                                                    columns.set(cols);
-                                                                }
-                                                            },
+                                                        div {
+                                                            label { class: "block text-xs font-medium text-gray-600 mb-1", "Display Name" }
+                                                            input {
+                                                                r#type: "text",
+                                                                class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                                placeholder: "e.g. Email Address",
+                                                                value: "{col.display_name}",
+                                                                oninput: {
+                                                                    let idx = idx;
+                                                                    move |e| {
+                                                                        let mut cols = columns();
+                                                                        cols[idx].display_name = e.value().clone();
+                                                                        columns.set(cols);
+                                                                    }
+                                                                },
+                                                            }
                                                         }
-                                                        "Unique"
+                                                        div {
+                                                            label { class: "block text-xs font-medium text-gray-600 mb-1", "Data Type" }
+                                                            select {
+                                                                class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                                onchange: {
+                                                                    let idx = idx;
+                                                                    move |e| {
+                                                                        let mut cols = columns();
+                                                                        cols[idx].data_type = match e.value().as_str() {
+                                                                            "Integer" => ColumnDataType::Integer,
+                                                                            "BigInt" => ColumnDataType::BigInt,
+                                                                            "Decimal" => ColumnDataType::Decimal,
+                                                                            "Boolean" => ColumnDataType::Boolean,
+                                                                            "Timestamp" => ColumnDataType::Timestamp,
+                                                                            "Date" => ColumnDataType::Date,
+                                                                            "Json" => ColumnDataType::Json,
+                                                                            "Uuid" => ColumnDataType::Uuid,
+                                                                            _ => ColumnDataType::Text,
+                                                                        };
+                                                                        columns.set(cols);
+                                                                    }
+                                                                },
+                                                                option { value: "Text", "Text" }
+                                                                option { value: "Integer", "Integer" }
+                                                                option { value: "BigInt", "BigInt" }
+                                                                option { value: "Decimal", "Decimal" }
+                                                                option { value: "Boolean", "Boolean" }
+                                                                option { value: "Timestamp", "Timestamp" }
+                                                                option { value: "Date", "Date" }
+                                                                option { value: "Json", "JSON" }
+                                                                option { value: "Uuid", "UUID" }
+                                                            }
+                                                        }
+                                                        div { class: "col-span-2 flex gap-4",
+                                                            label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                                input {
+                                                                    r#type: "checkbox",
+                                                                    class: "rounded border-gray-300",
+                                                                    checked: col.is_nullable,
+                                                                    onchange: {
+                                                                        let idx = idx;
+                                                                        move |e| {
+                                                                            let mut cols = columns();
+                                                                            cols[idx].is_nullable = e.checked();
+                                                                            columns.set(cols);
+                                                                        }
+                                                                    },
+                                                                }
+                                                                "Nullable"
+                                                            }
+                                                            label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                                input {
+                                                                    r#type: "checkbox",
+                                                                    class: "rounded border-gray-300",
+                                                                    checked: col.is_primary_key,
+                                                                    onchange: {
+                                                                        let idx = idx;
+                                                                        move |e| {
+                                                                            let mut cols = columns();
+                                                                            cols[idx].is_primary_key = e.checked();
+                                                                            columns.set(cols);
+                                                                        }
+                                                                    },
+                                                                }
+                                                                "Primary Key"
+                                                            }
+                                                            label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                                input {
+                                                                    r#type: "checkbox",
+                                                                    class: "rounded border-gray-300",
+                                                                    checked: col.is_unique,
+                                                                    onchange: {
+                                                                        let idx = idx;
+                                                                        move |e| {
+                                                                            let mut cols = columns();
+                                                                            cols[idx].is_unique = e.checked();
+                                                                            columns.set(cols);
+                                                                        }
+                                                                    },
+                                                                }
+                                                                "Unique"
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }

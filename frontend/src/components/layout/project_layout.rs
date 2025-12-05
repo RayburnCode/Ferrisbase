@@ -1,7 +1,6 @@
-// client/components/layout/app_layout.rs
+// client/components/layout/project_layout.rs
 use dioxus::prelude::*;
 use crate::Route;
-use super::{Navbar, Footer};
 use crate::components::projects::project_left_sidebar::ProjectLeftSidebar;
  
 #[component]
@@ -24,18 +23,11 @@ pub fn ProjectLayout() -> Element {
     };
     
     rsx! {
-        div { class: "flex flex-col min-h-screen",
-            Navbar {}
-            main { class: "flex-1 bg-CustomBackground font-display text-MyText",
-                // Layout container: sidebar + content
-                div { class: " px-4 sm:px-8 py-8 ",
-                    div { class: "flex gap-6",
-                        ProjectLeftSidebar { slug: project_id }
-                        div { class: "flex-1 bg-transparent", Outlet::<Route> {} }
-                    }
-                }
-            }
-            Footer {}
+        // Only render the sidebar and content area
+        // Navbar and Footer are handled by SignedInLayout
+        div { class: "flex gap-6",
+            ProjectLeftSidebar { slug: project_id }
+            div { class: "flex-1 bg-transparent", Outlet::<Route> {} }
         }
     }
 }

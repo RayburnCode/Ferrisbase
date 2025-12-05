@@ -19,3 +19,6 @@ pub use privacy_policy::PrivacyPolicy;
 
 pub mod terms_of_service;
 pub use terms_of_service::TermsOfService;
+
+pub mod user_settings;
+pub use user_settings::UserSettings;

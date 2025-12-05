@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 
 #[component]
-pub fn Navbar(children: Element) -> Element {
+pub fn SignedInNavbar(children: Element) -> Element {
     const LOGO: Asset = asset!("/assets/Original_Ferris.svg");
 
     let current_route = use_route::<Route>();

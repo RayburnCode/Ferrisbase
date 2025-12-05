@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
-use crate::{components::layout::{UnprotectedLayout, ProjectLayout}, 
-    views::{FAQ, Home, PrivacyPolicy, TermsOfService, NotFound}}; 
+use crate::{components::layout::{UnprotectedLayout, ProjectLayout, SignedInLayout}, 
+    views::{FAQ, Home, PrivacyPolicy, TermsOfService, NotFound, UserSettings}}; 
 use crate::views::projects::{ProjectById, Projects, TableEditor, SQLEditor, 
     CreateNewProject, ProjectSettings, APIDocs, Logs, Reports, Authentication, Database};
 use crate::views::auth::{LoginForm, ResetPasswordForm, RegisterForm};
@@ -18,21 +18,27 @@ pub enum Route {
         ResetPasswordForm {},
         #[route("/register")]
         RegisterForm {},
-
         #[route("/faq")]
         FAQ {},
         #[route("/privacy-policy")]
         PrivacyPolicy {},
         #[route("/terms-of-service")]
         TermsOfService {},
+    #[end_layout]
+
+
+    //Signed in Route
+        #[layout(SignedInLayout)]
+
         #[route("/projects")]
         Projects {},
         #[route("/projects/new")]
         CreateNewProject {},
+        #[route("/settings")]
+        UserSettings {},
 
-    #[end_layout]
 
-
+// Project Specific Routes
     #[layout(ProjectLayout)]
         #[route("/projects/:id")]
         ProjectById {id: String},
@@ -54,6 +60,9 @@ pub enum Route {
         Database {id: String},
 
     #[end_layout]
+
+    #[end_layout]
+
 
     #[route("/:..route")]
     NotFound { route: Vec<String> },

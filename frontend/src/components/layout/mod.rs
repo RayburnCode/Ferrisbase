@@ -9,3 +9,6 @@ pub use unprotected_layout::UnprotectedLayout;
 
 pub mod project_layout;
 pub use project_layout::ProjectLayout; 
+
+pub mod signed_in_layout;
+pub use signed_in_layout::SignedInLayout;

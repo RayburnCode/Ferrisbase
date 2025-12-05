@@ -3,7 +3,7 @@ use crate::routes::Route;
 
 
 #[component]
-pub fn ProjectLeftSidebar() -> Element {
+pub fn ProjectLeftSidebar(slug: String) -> Element {
     rsx! {
         nav { class: "w-48 bg-white border-r border-gray-200 min-h-screen p-4 hidden md:block",
 
@@ -20,7 +20,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "🏷️" }
                         Link {
                             to: Route::ProjectById {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "Overview" }
                         }
@@ -31,7 +31,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "🧾" }
                         Link {
                             to: Route::TableEditor {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "Table Editor" }
                         }
@@ -42,7 +42,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "🧩" }
                         Link {
                             to: Route::SQLEditor {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "SQL Editor" }
                         }
@@ -53,7 +53,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "🗄️" }
                         Link {
                             to: Route::Database {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "Database" }
                         }
@@ -64,7 +64,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "🔐" }
                         Link {
                             to: Route::Authentication {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "Authentication" }
                         }
@@ -76,10 +76,7 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📊" }
-                        Link {
-                            to: Route::Reports {
-                                id: "default".to_string(),
-                            },
+                        Link { to: Route::Reports { id: slug.clone() },
                             span { class: "text-sm font-medium", "Reports" }
                         }
                     }
@@ -87,10 +84,7 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📝" }
-                        Link {
-                            to: Route::Logs {
-                                id: "default".to_string(),
-                            },
+                        Link { to: Route::Logs { id: slug.clone() },
                             span { class: "text-sm font-medium", "Logs" }
                         }
                     }
@@ -98,10 +92,7 @@ pub fn ProjectLeftSidebar() -> Element {
                 li {
                     a { class: "flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100",
                         span { class: "text-xl", "📚" }
-                        Link {
-                            to: Route::APIDocs {
-                                id: "default".to_string(),
-                            },
+                        Link { to: Route::APIDocs { id: slug.clone() },
                             span { class: "text-sm font-medium", "API Docs" }
                         }
                     }
@@ -114,7 +105,7 @@ pub fn ProjectLeftSidebar() -> Element {
                         span { class: "text-xl", "⚙️" }
                         Link {
                             to: Route::ProjectSettings {
-                                id: "default".to_string(),
+                                id: slug.clone(),
                             },
                             span { class: "text-sm font-medium", "Settings" }
                         }

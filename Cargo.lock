@@ -2071,6 +2071,7 @@ name = "frontend"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "futures",
  "log",
  "reqwest",
  "serde",

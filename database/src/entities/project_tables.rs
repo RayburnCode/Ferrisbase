@@ -3,44 +3,43 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "projects")]
+#[sea_orm(table_name = "project_tables")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub name: String,
+    pub project_id: Uuid,
+    pub table_name: String,
+    pub display_name: String,
     #[sea_orm(column_type = "Text", nullable)]
     pub description: Option<String>,
-    #[sea_orm(unique)]
-    pub slug: String,
-    pub owner_id: Uuid,
-    pub database_status: Option<String>,
+    pub row_count: Option<i32>,
     pub created_at: Option<DateTime>,
     pub updated_at: Option<DateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::project_tables::Entity")]
-    ProjectTables,
+    #[sea_orm(has_many = "super::project_columns::Entity")]
+    ProjectColumns,
     #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::OwnerId",
-        to = "super::users::Column::Id",
+        belongs_to = "super::projects::Entity",
+        from = "Column::ProjectId",
+        to = "super::projects::Column::Id",
         on_update = "Cascade",
         on_delete = "Cascade"
     )]
-    Users,
+    Projects,
 }
 
-impl Related<super::project_tables::Entity> for Entity {
+impl Related<super::project_columns::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::ProjectTables.def()
+        Relation::ProjectColumns.def()
     }
 }
 
-impl Related<super::users::Entity> for Entity {
+impl Related<super::projects::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Users.def()
+        Relation::Projects.def()
     }
 }
 

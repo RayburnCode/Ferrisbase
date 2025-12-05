@@ -3,44 +3,37 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "projects")]
+#[sea_orm(table_name = "project_columns")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
-    pub name: String,
-    #[sea_orm(column_type = "Text", nullable)]
-    pub description: Option<String>,
-    #[sea_orm(unique)]
-    pub slug: String,
-    pub owner_id: Uuid,
-    pub database_status: Option<String>,
+    pub project_table_id: Uuid,
+    pub column_name: String,
+    pub display_name: String,
+    pub data_type: String,
+    pub is_nullable: Option<bool>,
+    pub is_primary_key: Option<bool>,
+    pub is_unique: Option<bool>,
+    pub default_value: Option<String>,
+    pub column_order: i32,
     pub created_at: Option<DateTime>,
-    pub updated_at: Option<DateTime>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::project_tables::Entity")]
-    ProjectTables,
     #[sea_orm(
-        belongs_to = "super::users::Entity",
-        from = "Column::OwnerId",
-        to = "super::users::Column::Id",
+        belongs_to = "super::project_tables::Entity",
+        from = "Column::ProjectTableId",
+        to = "super::project_tables::Column::Id",
         on_update = "Cascade",
         on_delete = "Cascade"
     )]
-    Users,
+    ProjectTables,
 }
 
 impl Related<super::project_tables::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ProjectTables.def()
-    }
-}
-
-impl Related<super::users::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Users.def()
     }
 }
 

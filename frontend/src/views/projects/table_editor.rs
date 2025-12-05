@@ -1,595 +1,448 @@
 use dioxus::prelude::*;
+use shared::models::{CreateTableRequest, ColumnDefinition, ColumnDataType};
+use crate::hooks::{use_list_tables, use_create_table, use_delete_table};
 
-/// The Table Editor page - Excel-like interface for editing table structure and data
+/// The Table Editor page - Interface for managing table schemas
 #[component]
 pub fn TableEditor(id: String) -> Element {
-    let mut selected_table = use_signal(|| "users".to_string());
-    let mut show_api_modal = use_signal(|| false);
-    let mut show_rls_modal = use_signal(|| false);
-    let mut editing_cell = use_signal(|| Option::<(usize, usize)>::None);
+    let mut selected_table = use_signal(|| None::<String>);
+    let mut show_create_modal = use_signal(|| false);
+    let mut show_delete_confirm = use_signal(|| false);
+    
+    // Fetch tables for this project
+    let mut tables_resource = use_list_tables(id.clone());
+    let create_table_action = use_create_table(id.clone());
+    let delete_table_action = use_delete_table(id.clone());
+    
+    // Form state for creating a new table
+    let mut table_name = use_signal(|| String::new());
+    let mut display_name = use_signal(|| String::new());
+    let mut description = use_signal(|| String::new());
+    let mut columns = use_signal(|| Vec::<ColumnDefinition>::new());
+    
+    let handle_create_table = move |_| {
+        let request = CreateTableRequest {
+            table_name: table_name(),
+            display_name: display_name(),
+            description: Some(description()).filter(|s| !s.is_empty()),
+            columns: columns(),
+        };
+        
+        create_table_action.send(request);
+        show_create_modal.set(false);
+        
+        // Reset form
+        table_name.set(String::new());
+        display_name.set(String::new());
+        description.set(String::new());
+        columns.set(Vec::new());
+        
+        // Refresh tables list
+        tables_resource.restart();
+    };
+    
+    let handle_delete_table = move |_| {
+        if let Some(name) = selected_table() {
+            delete_table_action.send(name);
+            show_delete_confirm.set(false);
+            selected_table.set(None);
+            
+            // Refresh tables list
+            tables_resource.restart();
+        }
+    };
+    
+    let add_column = move |_| {
+        let mut cols = columns();
+        cols.push(ColumnDefinition {
+            name: String::new(),
+            display_name: String::new(),
+            data_type: ColumnDataType::Text,
+            is_nullable: true,
+            is_primary_key: false,
+            is_unique: false,
+            default_value: None,
+        });
+        columns.set(cols);
+    };
+    
+    let mut remove_column = move |index: usize| {
+        let mut cols = columns();
+        cols.remove(index);
+        columns.set(cols);
+    };
     
     rsx! {
         div { class: "flex h-screen bg-gray-50",
             // Left Sidebar - Tables List
-            div { class: "w-64 bg-white border-r border-gray-200 flex flex-col",
+            div { class: "w-80 bg-white border-r border-gray-200 flex flex-col",
                 // Sidebar Header
-                div { class: "p-4 border-b border-gray-200",
-                    h2 { class: "text-lg font-semibold text-gray-900", "Tables" }
-                    p { class: "text-xs text-gray-500 mt-1", "Project: {id}" }
-                }
-                // Search Tables
-                div { class: "p-4 border-b border-gray-200",
-                    input {
-                        r#type: "text",
-                        placeholder: "Search tables...",
-                        class: "w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none",
-                    }
+                div { class: "p-6 border-b border-gray-200",
+                    h2 { class: "text-xl font-bold text-gray-900", "Tables" }
+                    p { class: "text-sm text-gray-500 mt-1", "Project: {id}" }
                 }
                 // Tables List
-                div { class: "flex-1 overflow-y-auto",
-                    div { class: "p-2 space-y-1",
-                        // Users Table
-                        button {
-                            class: if selected_table() == "users" { "w-full text-left px-3 py-2 bg-blue-50 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition group" } else { "w-full text-left px-3 py-2 hover:bg-gray-100 rounded transition group" },
-                            onclick: move |_| selected_table.set("users".to_string()),
-                            div { class: "flex items-center justify-between",
-                                div {
-                                    p { class: "font-medium text-gray-900 text-sm",
-                                        "🧑 users"
-                                    }
-                                    p { class: "text-xs text-gray-500", "3,847 rows" }
-                                }
-                                span { class: "text-gray-400 group-hover:text-gray-600 text-xs",
-                                    "→"
+                div { class: "flex-1 overflow-y-auto p-4",
+                    match &*tables_resource.read_unchecked() {
+                        Some(Ok(tables)) if tables.is_empty() => rsx! {
+                            div { class: "text-center py-12",
+                                p { class: "text-gray-500 mb-4", "No tables yet" }
+                                button {
+                                    class: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition",
+                                    onclick: move |_| show_create_modal.set(true),
+                                    "+ Create Your First Table"
                                 }
                             }
-                        }
-                        // Posts Table
-                        button {
-                            class: if selected_table() == "posts" { "w-full text-left px-3 py-2 bg-blue-50 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition group" } else { "w-full text-left px-3 py-2 hover:bg-gray-100 rounded transition group" },
-                            onclick: move |_| selected_table.set("posts".to_string()),
-                            div { class: "flex items-center justify-between",
-                                div {
-                                    p { class: "font-medium text-gray-900 text-sm",
-                                        "📝 posts"
+                        },
+                        Some(Ok(tables)) => rsx! {
+                            div { class: "space-y-2",
+                                for table in tables {
+                                    button {
+                                        key: "{table.table_name}",
+                                        class: if selected_table() == Some(table.table_name.clone()) { "w-full text-left px-4 py-3 bg-blue-50 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition" } else { "w-full text-left px-4 py-3 border-l-4 border-transparent hover:bg-gray-50 rounded transition" },
+                                        onclick: {
+                                            let table_name = table.table_name.clone();
+                                            move |_| selected_table.set(Some(table_name.clone()))
+                                        },
+                                        div {
+                                            p { class: "font-semibold text-gray-900", "{table.display_name}" }
+                                            p { class: "text-sm text-gray-500 mt-1", "{table.row_count} rows" }
+                                            if let Some(desc) = &table.description {
+                                                p { class: "text-xs text-gray-400 mt-1 truncate", "{desc}" }
+                                            }
+                                        }
                                     }
-                                    p { class: "text-xs text-gray-500", "1,234 rows" }
-                                }
-                                span { class: "text-gray-400 group-hover:text-gray-600 text-xs",
-                                    "→"
                                 }
                             }
-                        }
-                        // Comments Table
-                        button {
-                            class: if selected_table() == "comments" { "w-full text-left px-3 py-2 bg-blue-50 border-l-4 border-blue-600 rounded-r hover:bg-blue-100 transition group" } else { "w-full text-left px-3 py-2 hover:bg-gray-100 rounded transition group" },
-                            onclick: move |_| selected_table.set("comments".to_string()),
-                            div { class: "flex items-center justify-between",
-                                div {
-                                    p { class: "font-medium text-gray-900 text-sm",
-                                        "💬 comments"
-                                    }
-                                    p { class: "text-xs text-gray-500", "5,621 rows" }
-                                }
-                                span { class: "text-gray-400 group-hover:text-gray-600 text-xs",
-                                    "→"
-                                }
+                        },
+                        Some(Err(e)) => rsx! {
+                            div { class: "p-4 bg-red-50 border border-red-200 rounded text-red-700 text-sm",
+                                "Error loading tables: {e}"
                             }
-                        }
-                        // Sessions Table
-                        button { class: "w-full text-left px-3 py-2 hover:bg-gray-100 rounded transition group",
-                            div { class: "flex items-center justify-between",
-                                div {
-                                    p { class: "font-medium text-gray-900 text-sm",
-                                        "🔐 sessions"
-                                    }
-                                    p { class: "text-xs text-gray-500", "892 rows" }
-                                }
-                                span { class: "text-gray-400 group-hover:text-gray-600 text-xs",
-                                    "→"
-                                }
+                        },
+                        None => rsx! {
+                            div { class: "flex items-center justify-center py-12",
+                                div { class: "animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" }
                             }
-                        }
-                        // API Keys Table
-                        button { class: "w-full text-left px-3 py-2 hover:bg-gray-100 rounded transition group",
-                            div { class: "flex items-center justify-between",
-                                div {
-                                    p { class: "font-medium text-gray-900 text-sm",
-                                        "🔑 api_keys"
-                                    }
-                                    p { class: "text-xs text-gray-500", "24 rows" }
-                                }
-                                span { class: "text-gray-400 group-hover:text-gray-600 text-xs",
-                                    "→"
-                                }
-                            }
-                        }
+                        },
                     }
                 }
                 // Add Table Button
                 div { class: "p-4 border-t border-gray-200",
-                    button { class: "w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition text-sm",
-                        "+ New Table"
+                    button {
+                        class: "w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition flex items-center justify-center gap-2",
+                        onclick: move |_| show_create_modal.set(true),
+                        span { "+" }
+                        span { "New Table" }
                     }
                 }
             }
             // Main Content Area
             div { class: "flex-1 flex flex-col overflow-hidden",
-                // Top Toolbar
-                div { class: "bg-white border-b border-gray-200 px-6 py-4",
-                    div { class: "flex items-center justify-between",
-                        // Table Info
+                if let Some(ref name) = selected_table() {
+                    // Show selected table placeholder
+                    div { class: "flex items-center justify-center h-full",
+                        div { class: "text-center p-8",
+                            h2 { class: "text-2xl font-bold text-gray-900 mb-4", "Table: {name}" }
+                            p { class: "text-gray-600",
+                                "Table details view will be implemented with row data editing."
+                            }
+                            button {
+                                class: "mt-6 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition",
+                                onclick: move |_| show_delete_confirm.set(true),
+                                "Delete Table"
+                            }
+                        }
+                    }
+                } else {
+                    // No table selected
+                    div { class: "flex items-center justify-center h-full text-gray-400",
+                        div { class: "text-center",
+                            svg {
+                                class: "mx-auto h-24 w-24 text-gray-300 mb-4",
+                                fill: "none",
+                                stroke: "currentColor",
+                                view_box: "0 0 24 24",
+                                path {
+                                    stroke_linecap: "round",
+                                    stroke_linejoin: "round",
+                                    stroke_width: "1.5",
+                                    d: "M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
+                                }
+                            }
+                            p { class: "text-lg font-medium", "Select a table to view its schema" }
+                            p { class: "text-sm mt-2", "or create a new table to get started" }
+                        }
+                    }
+                }
+            }
+        }
+        // Create Table Modal
+        if show_create_modal() {
+            div {
+                class: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4",
+                onclick: move |_| show_create_modal.set(false),
+                div {
+                    class: "bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto",
+                    onclick: move |e| e.stop_propagation(),
+                    // Modal Header
+                    div { class: "px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white",
+                        h3 { class: "text-xl font-bold text-gray-900", "Create New Table" }
+                        button {
+                            class: "text-gray-400 hover:text-gray-600 text-2xl leading-none",
+                            onclick: move |_| show_create_modal.set(false),
+                            "×"
+                        }
+                    }
+                    // Modal Body
+                    div { class: "px-6 py-6 space-y-6",
+                        // Table Name
                         div {
-                            h1 { class: "text-2xl font-bold text-gray-900", "{selected_table}" }
-                            p { class: "text-sm text-gray-600 mt-1",
-                                "3,847 rows • 5 columns • Last modified 2 hours ago"
+                            label { class: "block text-sm font-medium text-gray-700 mb-2",
+                                "Table Name (database identifier)"
+                            }
+                            input {
+                                r#type: "text",
+                                class: "w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                placeholder: "e.g. user_profiles",
+                                value: "{table_name}",
+                                oninput: move |e| table_name.set(e.value().clone()),
+                            }
+                            p { class: "text-xs text-gray-500 mt-1",
+                                "Use lowercase letters, numbers, and underscores only"
                             }
                         }
-                        // Action Buttons
-                        div { class: "flex gap-3",
-                            button {
-                                class: "px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md transition text-sm flex items-center gap-2",
-                                onclick: move |_| show_rls_modal.set(true),
-                                "🛡️ RLS Settings"
+                        // Display Name
+                        div {
+                            label { class: "block text-sm font-medium text-gray-700 mb-2",
+                                "Display Name"
                             }
-                            button {
-                                class: "px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition text-sm flex items-center gap-2",
-                                onclick: move |_| show_api_modal.set(true),
-                                "🔗 API Endpoint"
-                            }
-                            button { class: "px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition text-sm",
-                                "+ Add Row"
+                            input {
+                                r#type: "text",
+                                class: "w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                placeholder: "e.g. User Profiles",
+                                value: "{display_name}",
+                                oninput: move |e| display_name.set(e.value().clone()),
                             }
                         }
-                    }
-                }
-                // Excel-like Grid
-                div { class: "flex-1 overflow-auto p-6 bg-gray-50",
-                    div { class: "bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden",
-                        // Grid Table
-                        div { class: "overflow-x-auto",
-                            table { class: "min-w-full border-collapse",
-                                // Header Row
-                                thead { class: "bg-gray-100 sticky top-0 z-10",
-                                    tr {
-                                        // Row Number Header
-                                        th { class: "w-12 px-3 py-3 border-r border-b border-gray-300 bg-gray-200 text-center text-xs font-semibold text-gray-600",
-                                            "#"
-                                        }
-                                        // Column Headers
-                                        th { class: "px-4 py-3 border-r border-b border-gray-300 text-left min-w-[150px]",
-                                            div { class: "flex items-center justify-between group",
-                                                div {
-                                                    p { class: "font-semibold text-gray-900 text-sm",
-                                                        "id"
-                                                    }
-                                                    p { class: "text-xs text-gray-500 font-normal",
-                                                        "SERIAL"
-                                                    }
-                                                }
-                                                button { class: "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition",
-                                                    "⋮"
-                                                }
-                                            }
-                                        }
-                                        th { class: "px-4 py-3 border-r border-b border-gray-300 text-left min-w-[200px]",
-                                            div { class: "flex items-center justify-between group",
-                                                div {
-                                                    p { class: "font-semibold text-gray-900 text-sm",
-                                                        "email"
-                                                    }
-                                                    p { class: "text-xs text-gray-500 font-normal",
-                                                        "VARCHAR(255)"
-                                                    }
-                                                }
-                                                button { class: "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition",
-                                                    "⋮"
-                                                }
-                                            }
-                                        }
-                                        th { class: "px-4 py-3 border-r border-b border-gray-300 text-left min-w-[180px]",
-                                            div { class: "flex items-center justify-between group",
-                                                div {
-                                                    p { class: "font-semibold text-gray-900 text-sm",
-                                                        "name"
-                                                    }
-                                                    p { class: "text-xs text-gray-500 font-normal",
-                                                        "VARCHAR(100)"
-                                                    }
-                                                }
-                                                button { class: "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition",
-                                                    "⋮"
-                                                }
-                                            }
-                                        }
-                                        th { class: "px-4 py-3 border-r border-b border-gray-300 text-left min-w-[160px]",
-                                            div { class: "flex items-center justify-between group",
-                                                div {
-                                                    p { class: "font-semibold text-gray-900 text-sm",
-                                                        "role"
-                                                    }
-                                                    p { class: "text-xs text-gray-500 font-normal",
-                                                        "VARCHAR(50)"
-                                                    }
-                                                }
-                                                button { class: "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition",
-                                                    "⋮"
-                                                }
-                                            }
-                                        }
-                                        th { class: "px-4 py-3 border-b border-gray-300 text-left min-w-[180px]",
-                                            div { class: "flex items-center justify-between group",
-                                                div {
-                                                    p { class: "font-semibold text-gray-900 text-sm",
-                                                        "created_at"
-                                                    }
-                                                    p { class: "text-xs text-gray-500 font-normal",
-                                                        "TIMESTAMP"
-                                                    }
-                                                }
-                                                button { class: "opacity-0 group-hover:opacity-100 text-gray-400 hover:text-gray-600 transition",
-                                                    "⋮"
-                                                }
-                                            }
-                                        }
+                        // Description
+                        div {
+                            label { class: "block text-sm font-medium text-gray-700 mb-2",
+                                "Description (optional)"
+                            }
+                            textarea {
+                                class: "w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                rows: "2",
+                                placeholder: "Describe what this table stores...",
+                                value: "{description}",
+                                oninput: move |e| description.set(e.value().clone()),
+                            }
+                        }
+                        // Columns
+                        div {
+                            div { class: "flex items-center justify-between mb-4",
+                                label { class: "block text-sm font-medium text-gray-700",
+                                    "Columns"
+                                }
+                                button {
+                                    class: "px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded transition",
+                                    onclick: add_column,
+                                    "+ Add Column"
+                                }
+                            }
+                            if columns().is_empty() {
+                                div { class: "text-center py-8 bg-gray-50 rounded border-2 border-dashed border-gray-300",
+                                    p { class: "text-gray-500", "No columns added yet" }
+                                    p { class: "text-sm text-gray-400 mt-1",
+                                        "Tables will automatically get id, created_at, and updated_at columns"
                                     }
                                 }
-                                // Data Rows
-                                tbody { class: "bg-white",
-                                    // Row 1
-                                    tr { class: "hover:bg-blue-50 group",
-                                        td { class: "px-3 py-2 border-r border-b border-gray-200 bg-gray-50 text-center text-sm font-medium text-gray-600",
-                                            "1"
-                                        }
-                                        td {
-                                            class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            onclick: move |_| editing_cell.set(Some((1, 1))),
-                                            "1"
-                                        }
-                                        td {
-                                            class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            onclick: move |_| editing_cell.set(Some((1, 2))),
-                                            "john@example.com"
-                                        }
-                                        td {
-                                            class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            onclick: move |_| editing_cell.set(Some((1, 3))),
-                                            "John Doe"
-                                        }
-                                        td {
-                                            class: "px-4 py-2 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100",
-                                            onclick: move |_| editing_cell.set(Some((1, 4))),
-                                            span { class: "px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded",
-                                                "admin"
+                            } else {
+                                div { class: "space-y-4",
+                                    for (idx , col) in columns().iter().enumerate() {
+                                        div {
+                                            key: "{idx}",
+                                            class: "p-4 border border-gray-200 rounded-lg space-y-3",
+                                            div { class: "flex items-center justify-between mb-3",
+                                                h4 { class: "font-medium text-gray-900",
+                                                    "Column {idx + 1}"
+                                                }
+                                                button {
+                                                    class: "text-red-600 hover:text-red-700 text-sm font-medium",
+                                                    onclick: move |_| remove_column(idx),
+                                                    "Remove"
+                                                }
                                             }
-                                        }
-                                        td {
-                                            class: "px-4 py-2 border-b border-gray-200 text-sm text-gray-600 font-mono cursor-pointer hover:bg-blue-100",
-                                            onclick: move |_| editing_cell.set(Some((1, 5))),
-                                            "2025-11-15 10:30"
-                                        }
-                                    }
-                                    // Row 2
-                                    tr { class: "hover:bg-blue-50 group",
-                                        td { class: "px-3 py-2 border-r border-b border-gray-200 bg-gray-50 text-center text-sm font-medium text-gray-600",
-                                            "2"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "2"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "jane@example.com"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "Jane Smith"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100",
-                                            span { class: "px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded",
-                                                "user"
+                                            div { class: "grid grid-cols-2 gap-3",
+                                                div {
+                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
+                                                        "Column Name"
+                                                    }
+                                                    input {
+                                                        r#type: "text",
+                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                        placeholder: "e.g. email",
+                                                        value: "{col.name}",
+                                                        oninput: {
+                                                            let idx = idx;
+                                                            move |e| {
+                                                                let mut cols = columns();
+                                                                cols[idx].name = e.value().clone();
+                                                                columns.set(cols);
+                                                            }
+                                                        },
+                                                    }
+                                                }
+                                                div {
+                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
+                                                        "Display Name"
+                                                    }
+                                                    input {
+                                                        r#type: "text",
+                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                        placeholder: "e.g. Email Address",
+                                                        value: "{col.display_name}",
+                                                        oninput: {
+                                                            let idx = idx;
+                                                            move |e| {
+                                                                let mut cols = columns();
+                                                                cols[idx].display_name = e.value().clone();
+                                                                columns.set(cols);
+                                                            }
+                                                        },
+                                                    }
+                                                }
+                                                div {
+                                                    label { class: "block text-xs font-medium text-gray-600 mb-1",
+                                                        "Data Type"
+                                                    }
+                                                    select {
+                                                        class: "w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500",
+                                                        onchange: {
+                                                            let idx = idx;
+                                                            move |e| {
+                                                                let mut cols = columns();
+                                                                cols[idx].data_type = match e.value().as_str() {
+                                                                    "Integer" => ColumnDataType::Integer,
+                                                                    "BigInt" => ColumnDataType::BigInt,
+                                                                    "Decimal" => ColumnDataType::Decimal,
+                                                                    "Boolean" => ColumnDataType::Boolean,
+                                                                    "Timestamp" => ColumnDataType::Timestamp,
+                                                                    "Date" => ColumnDataType::Date,
+                                                                    "Json" => ColumnDataType::Json,
+                                                                    "Uuid" => ColumnDataType::Uuid,
+                                                                    _ => ColumnDataType::Text,
+                                                                };
+                                                                columns.set(cols);
+                                                            }
+                                                        },
+                                                        option { value: "Text", "Text" }
+                                                        option { value: "Integer", "Integer" }
+                                                        option { value: "BigInt", "BigInt" }
+                                                        option { value: "Decimal", "Decimal" }
+                                                        option { value: "Boolean", "Boolean" }
+                                                        option { value: "Timestamp", "Timestamp" }
+                                                        option { value: "Date", "Date" }
+                                                        option { value: "Json", "JSON" }
+                                                        option { value: "Uuid", "UUID" }
+                                                    }
+                                                }
+                                                div { class: "col-span-2 flex gap-4",
+                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                        input {
+                                                            r#type: "checkbox",
+                                                            class: "rounded border-gray-300",
+                                                            checked: col.is_nullable,
+                                                            onchange: {
+                                                                let idx = idx;
+                                                                move |e| {
+                                                                    let mut cols = columns();
+                                                                    cols[idx].is_nullable = e.checked();
+                                                                    columns.set(cols);
+                                                                }
+                                                            },
+                                                        }
+                                                        "Nullable"
+                                                    }
+                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                        input {
+                                                            r#type: "checkbox",
+                                                            class: "rounded border-gray-300",
+                                                            checked: col.is_primary_key,
+                                                            onchange: {
+                                                                let idx = idx;
+                                                                move |e| {
+                                                                    let mut cols = columns();
+                                                                    cols[idx].is_primary_key = e.checked();
+                                                                    columns.set(cols);
+                                                                }
+                                                            },
+                                                        }
+                                                        "Primary Key"
+                                                    }
+                                                    label { class: "flex items-center gap-2 text-sm text-gray-700",
+                                                        input {
+                                                            r#type: "checkbox",
+                                                            class: "rounded border-gray-300",
+                                                            checked: col.is_unique,
+                                                            onchange: {
+                                                                let idx = idx;
+                                                                move |e| {
+                                                                    let mut cols = columns();
+                                                                    cols[idx].is_unique = e.checked();
+                                                                    columns.set(cols);
+                                                                }
+                                                            },
+                                                        }
+                                                        "Unique"
+                                                    }
+                                                }
                                             }
-                                        }
-                                        td { class: "px-4 py-2 border-b border-gray-200 text-sm text-gray-600 font-mono cursor-pointer hover:bg-blue-100",
-                                            "2025-11-16 14:20"
-                                        }
-                                    }
-                                    // Row 3
-                                    tr { class: "hover:bg-blue-50 group",
-                                        td { class: "px-3 py-2 border-r border-b border-gray-200 bg-gray-50 text-center text-sm font-medium text-gray-600",
-                                            "3"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "3"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "bob@example.com"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "Bob Wilson"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100",
-                                            span { class: "px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded",
-                                                "moderator"
-                                            }
-                                        }
-                                        td { class: "px-4 py-2 border-b border-gray-200 text-sm text-gray-600 font-mono cursor-pointer hover:bg-blue-100",
-                                            "2025-11-18 09:15"
-                                        }
-                                    }
-                                    // Row 4
-                                    tr { class: "hover:bg-blue-50 group",
-                                        td { class: "px-3 py-2 border-r border-b border-gray-200 bg-gray-50 text-center text-sm font-medium text-gray-600",
-                                            "4"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "4"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "alice@example.com"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "Alice Johnson"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100",
-                                            span { class: "px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded",
-                                                "user"
-                                            }
-                                        }
-                                        td { class: "px-4 py-2 border-b border-gray-200 text-sm text-gray-600 font-mono cursor-pointer hover:bg-blue-100",
-                                            "2025-11-20 16:45"
-                                        }
-                                    }
-                                    // Row 5
-                                    tr { class: "hover:bg-blue-50 group",
-                                        td { class: "px-3 py-2 border-r border-b border-gray-200 bg-gray-50 text-center text-sm font-medium text-gray-600",
-                                            "5"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "5"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "charlie@example.com"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 text-sm text-gray-900 cursor-pointer hover:bg-blue-100",
-                                            "Charlie Brown"
-                                        }
-                                        td { class: "px-4 py-2 border-r border-b border-gray-200 cursor-pointer hover:bg-blue-100",
-                                            span { class: "px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded",
-                                                "user"
-                                            }
-                                        }
-                                        td { class: "px-4 py-2 border-b border-gray-200 text-sm text-gray-600 font-mono cursor-pointer hover:bg-blue-100",
-                                            "2025-11-22 11:00"
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                    // Pagination
-                    div { class: "mt-4 flex items-center justify-between bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3",
-                        div { class: "flex items-center gap-2",
-                            p { class: "text-sm text-gray-600", "Showing" }
-                            select { class: "px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none",
-                                option { "5" }
-                                option { "10" }
-                                option { "25" }
-                                option { "50" }
-                                option { "100" }
-                            }
-                            p { class: "text-sm text-gray-600", "of 3,847 rows" }
+                    // Modal Footer
+                    div { class: "px-6 py-4 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 bg-white",
+                        button {
+                            class: "px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition",
+                            onclick: move |_| show_create_modal.set(false),
+                            "Cancel"
                         }
-                        div { class: "flex gap-2",
-                            button {
-                                class: "px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                                disabled: true,
-                                "← Previous"
-                            }
-                            button { class: "px-3 py-1 border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium text-gray-700",
-                                "Next →"
-                            }
+                        button {
+                            class: "px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed",
+                            disabled: table_name().is_empty() || display_name().is_empty(),
+                            onclick: handle_create_table,
+                            "Create Table"
                         }
                     }
                 }
             }
         }
-        // API Endpoint Modal
-        if show_api_modal() {
+        // Delete Confirmation Modal
+        if show_delete_confirm() {
             div {
                 class: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4",
-                onclick: move |_| show_api_modal.set(false),
+                onclick: move |_| show_delete_confirm.set(false),
                 div {
-                    class: "bg-white rounded-lg shadow-xl max-w-3xl w-full p-6",
+                    class: "bg-white rounded-lg shadow-xl max-w-md w-full p-6",
                     onclick: move |e| e.stop_propagation(),
-                    div { class: "flex items-center justify-between mb-4",
-                        h2 { class: "text-2xl font-bold text-gray-900", "REST API Endpoints" }
-                        button {
-                            class: "text-gray-400 hover:text-gray-600 text-2xl",
-                            onclick: move |_| show_api_modal.set(false),
-                            "×"
-                        }
-                    }
-                    div { class: "space-y-4",
-                        // GET All
-                        div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200",
-                            div { class: "flex items-center gap-3 mb-2",
-                                span { class: "px-2 py-1 bg-green-100 text-green-800 font-semibold text-xs rounded",
-                                    "GET"
-                                }
-                                p { class: "font-mono text-sm text-gray-900",
-                                    "https://api.ferrisbase.com/{id}/users"
-                                }
-                            }
-                            p { class: "text-sm text-gray-600", "Retrieve all users" }
-                            button { class: "mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                "📋 Copy"
-                            }
-                        }
-                        // GET by ID
-                        div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200",
-                            div { class: "flex items-center gap-3 mb-2",
-                                span { class: "px-2 py-1 bg-green-100 text-green-800 font-semibold text-xs rounded",
-                                    "GET"
-                                }
-                                p { class: "font-mono text-sm text-gray-900",
-                                    "https://api.ferrisbase.com/{id}/users/:id"
-                                }
-                            }
-                            p { class: "text-sm text-gray-600", "Retrieve a specific user by ID" }
-                            button { class: "mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                "📋 Copy"
-                            }
-                        }
-                        // POST
-                        div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200",
-                            div { class: "flex items-center gap-3 mb-2",
-                                span { class: "px-2 py-1 bg-blue-100 text-blue-800 font-semibold text-xs rounded",
-                                    "POST"
-                                }
-                                p { class: "font-mono text-sm text-gray-900",
-                                    "https://api.ferrisbase.com/{id}/users"
-                                }
-                            }
-                            p { class: "text-sm text-gray-600 mb-2", "Create a new user" }
-                            div { class: "bg-gray-800 rounded p-3 text-xs font-mono text-green-400 overflow-x-auto",
-                                pre {
-                                    r#"{{
-  "email": "new@example.com",
-  "name": "New User",
-  "role": "user"
-}}"#
-                                }
-                            }
-                            button { class: "mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                "📋 Copy"
-                            }
-                        }
-                        // PUT
-                        div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200",
-                            div { class: "flex items-center gap-3 mb-2",
-                                span { class: "px-2 py-1 bg-yellow-100 text-yellow-800 font-semibold text-xs rounded",
-                                    "PUT"
-                                }
-                                p { class: "font-mono text-sm text-gray-900",
-                                    "https://api.ferrisbase.com/{id}/users/:id"
-                                }
-                            }
-                            p { class: "text-sm text-gray-600", "Update a user" }
-                            button { class: "mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                "📋 Copy"
-                            }
-                        }
-                        // DELETE
-                        div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200",
-                            div { class: "flex items-center gap-3 mb-2",
-                                span { class: "px-2 py-1 bg-red-100 text-red-800 font-semibold text-xs rounded",
-                                    "DELETE"
-                                }
-                                p { class: "font-mono text-sm text-gray-900",
-                                    "https://api.ferrisbase.com/{id}/users/:id"
-                                }
-                            }
-                            p { class: "text-sm text-gray-600", "Delete a user" }
-                            button { class: "mt-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                "📋 Copy"
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // Row Level Security Modal
-        if show_rls_modal() {
-            div {
-                class: "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4",
-                onclick: move |_| show_rls_modal.set(false),
-                div {
-                    class: "bg-white rounded-lg shadow-xl max-w-3xl w-full p-6",
-                    onclick: move |e| e.stop_propagation(),
-                    div { class: "flex items-center justify-between mb-4",
-                        h2 { class: "text-2xl font-bold text-gray-900", "Row Level Security Settings" }
-                        button {
-                            class: "text-gray-400 hover:text-gray-600 text-2xl",
-                            onclick: move |_| show_rls_modal.set(false),
-                            "×"
-                        }
-                    }
+                    h3 { class: "text-lg font-bold text-gray-900 mb-4", "Delete Table?" }
                     p { class: "text-gray-600 mb-6",
-                        "Control access to rows in the '{selected_table}' table based on user permissions and policies."
+                        "Are you sure you want to delete this table? This action cannot be undone and all data will be permanently lost."
                     }
-                    // Enable RLS Toggle
-                    div { class: "bg-gray-50 rounded-lg p-4 border border-gray-200 mb-6",
-                        div { class: "flex items-center justify-between",
-                            div {
-                                p { class: "font-semibold text-gray-900", "Enable Row Level Security" }
-                                p { class: "text-sm text-gray-600 mt-1",
-                                    "When enabled, only rows that match the policies can be accessed"
-                                }
-                            }
-                            button { class: "relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600",
-                                span { class: "inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-6" }
-                            }
+                    div { class: "flex justify-end gap-3",
+                        button {
+                            class: "px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50 transition",
+                            onclick: move |_| show_delete_confirm.set(false),
+                            "Cancel"
                         }
-                    }
-                    // Policies
-                    div { class: "space-y-4",
-                        h3 { class: "text-lg font-semibold text-gray-900 mb-3", "Active Policies" }
-                        // Policy 1
-                        div { class: "border border-gray-200 rounded-lg p-4",
-                            div { class: "flex items-start justify-between mb-2",
-                                div {
-                                    p { class: "font-medium text-gray-900",
-                                        "Users can view their own data"
-                                    }
-                                    p { class: "text-xs text-gray-500 mt-1",
-                                        "SELECT • Created Nov 15, 2025"
-                                    }
-                                }
-                                span { class: "px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded",
-                                    "Active"
-                                }
-                            }
-                            div { class: "mt-3 bg-gray-800 rounded p-3 text-xs font-mono text-green-400",
-                                pre { "auth.uid() = user_id" }
-                            }
-                            div { class: "mt-3 flex gap-2",
-                                button { class: "px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                    "Edit"
-                                }
-                                button { class: "px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded",
-                                    "Delete"
-                                }
-                            }
-                        }
-                        // Policy 2
-                        div { class: "border border-gray-200 rounded-lg p-4",
-                            div { class: "flex items-start justify-between mb-2",
-                                div {
-                                    p { class: "font-medium text-gray-900",
-                                        "Admins can view all data"
-                                    }
-                                    p { class: "text-xs text-gray-500 mt-1",
-                                        "SELECT • Created Nov 15, 2025"
-                                    }
-                                }
-                                span { class: "px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded",
-                                    "Active"
-                                }
-                            }
-                            div { class: "mt-3 bg-gray-800 rounded p-3 text-xs font-mono text-green-400",
-                                pre { "auth.role() = 'admin'" }
-                            }
-                            div { class: "mt-3 flex gap-2",
-                                button { class: "px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-medium rounded",
-                                    "Edit"
-                                }
-                                button { class: "px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded",
-                                    "Delete"
-                                }
-                            }
-                        }
-                        // Add Policy Button
-                        button { class: "w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 text-gray-600 hover:text-blue-600 font-medium transition",
-                            "+ Add New Policy"
+                        button {
+                            class: "px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition",
+                            onclick: handle_delete_table,
+                            "Delete"
                         }
                     }
                 }

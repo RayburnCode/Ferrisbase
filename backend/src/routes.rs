@@ -16,6 +16,14 @@ pub fn create_router(state: AppState) -> Router {
                 .put(handlers::update_project)
                 .delete(handlers::delete_project)
         )
+        .route("/{slug}/tables",
+            get(handlers::list_tables)
+                .post(handlers::create_table)
+        )
+        .route("/{slug}/tables/{table_name}",
+            get(handlers::get_table)
+                .delete(handlers::delete_table)
+        )
         .layer(axum::middleware::from_fn_with_state(
             state.clone(),
             middleware::require_auth

@@ -3,6 +3,8 @@
 pub mod prelude;
 
 pub mod contacts;
+pub mod project_columns;
+pub mod project_tables;
 pub mod projects;
 pub mod sea_orm_active_enums;
 pub mod users;

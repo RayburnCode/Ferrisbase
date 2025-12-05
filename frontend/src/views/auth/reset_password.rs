@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::Route;
 use crate::components::{ErrorNotification, SuccessNotification};
-const LOGO: Asset = asset!("/assets/favicon.ico");
+const LOGO: Asset = asset!("/assets/Original_Ferris.svg");
 
 #[component]
 pub fn ResetPasswordForm() -> Element {

@@ -5,7 +5,7 @@ use shared::models::{AuthResponse, RegisterRequest};
 use reqwest::Client;
 use crate::config::endpoints;
  
-const LOGO: Asset = asset!("/assets/favicon.ico");
+const LOGO: Asset = asset!("/assets/Original_Ferris.svg");
 
 #[component]
 pub fn RegisterForm() -> Element {

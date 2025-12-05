@@ -4,6 +4,8 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Navbar(children: Element) -> Element {
+    const LOGO: Asset = asset!("/assets/Original_Ferris.svg");
+
     let current_route = use_route::<Route>();
     let mut is_mobile_menu_open = use_signal(|| false);
     let mut show_user_menu = use_signal(|| false);
@@ -22,7 +24,7 @@ pub fn Navbar(children: Element) -> Element {
                         Link {
                             to: Route::Home {},
                             class: "flex items-center gap-2 text-2xl font-bold",
-                            span { class: "text-blue-600", "🦀" }
+                            img { class: "text-blue-600 w-8 h-8", src: "{LOGO}" }
                             span { class: "text-gray-900", "Ferrisbase" }
                         }
                         // Desktop navigation

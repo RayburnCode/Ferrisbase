@@ -29,6 +29,23 @@ pub fn create_router(state: AppState) -> Router {
             middleware::require_auth
         ));
 
+    // Dynamic REST API routes for user-defined tables
+    let dynamic_api = Router::new()
+        .route("/{project_slug}/{table_name}",
+            get(handlers::list_table_rows)
+                .post(handlers::create_table_row)
+        )
+        .route("/{project_slug}/{table_name}/{id}",
+            get(handlers::get_table_row)
+                .put(handlers::update_table_row)
+                .patch(handlers::patch_table_row)
+                .delete(handlers::delete_table_row)
+        )
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            middleware::require_auth
+        ));
+
     Router::new()
         // Health check
         .route("/health", get(health_check))
@@ -43,6 +60,8 @@ pub fn create_router(state: AppState) -> Router {
                 .route("/auth/me", get(handlers::get_current_user))
                 // Project routes (protected)
                 .nest("/projects", protected_projects)
+                // Dynamic data API (protected)
+                .nest("/data", dynamic_api)
         )
         .with_state(state)
 }
